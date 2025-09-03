@@ -763,7 +763,8 @@ export default function PopupEditor() {
               }}>
                 <div style={{
                   backgroundColor: formData.popupBackground,
-                  padding: "32px",
+                  padding: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "0" : 
+                          formData.imagePosition === "top" ? "0 32px 32px 32px" : "32px",
                   borderRadius: formData.cornerRadius === "rounded" ? "12px" : 
                               formData.cornerRadius === "square" ? "0px" : "8px",
                   maxWidth: formData.displaySize === "large" ? "600px" : 
@@ -774,11 +775,13 @@ export default function PopupEditor() {
                   position: "relative",
                   display: "flex",
                   flexDirection: formData.imagePosition === "top" ? "column" : "row",
-                  alignItems: formData.imagePosition === "left" || formData.imagePosition === "right" ? "flex-start" : "center",
+                  alignItems: formData.imagePosition === "left" || formData.imagePosition === "right" ? "stretch" : "center",
                   backgroundImage: formData.imagePosition === "background" && formData.imageUrl ? `url(${formData.imageUrl})` : "none",
                   backgroundSize: "cover",
                   backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat"
+                  backgroundRepeat: "no-repeat",
+                  minHeight: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "400px" : "auto",
+                  overflow: "hidden"
                 }}>
                   <button style={{
                     position: "absolute",
@@ -794,17 +797,18 @@ export default function PopupEditor() {
                   {/* Image Left */}
                   {formData.imagePosition === "left" && formData.imageUrl && (
                     <div style={{ 
-                      marginRight: "24px",
-                      flexShrink: 0
+                      flexShrink: 0,
+                      alignSelf: "stretch"
                     }}>
                       <img 
                         src={formData.imageUrl} 
                         alt="Popup image"
                         style={{
-                          width: "150px",
-                          height: "150px",
+                          width: "200px",
+                          height: "100%",
                           objectFit: "cover",
-                          borderRadius: "8px"
+                          borderRadius: formData.cornerRadius === "rounded" ? "12px 0 0 12px" : 
+                                      formData.cornerRadius === "square" ? "0" : "8px 0 0 8px"
                         }}
                       />
                     </div>
@@ -812,7 +816,8 @@ export default function PopupEditor() {
                   
                   <div style={{ 
                     flex: 1,
-                    order: formData.imagePosition === "right" ? 1 : 2
+                    order: formData.imagePosition === "right" ? 1 : 2,
+                    padding: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "32px" : "0"
                   }}>
                     {/* Logo */}
                     {formData.logoUrl && (
@@ -832,21 +837,35 @@ export default function PopupEditor() {
                       </div>
                     )}
                     
-                    {/* Image Top */}
-                    {formData.imagePosition === "top" && formData.imageUrl && (
-                      <div style={{ marginBottom: "24px" }}>
-                        <img 
-                          src={formData.imageUrl} 
-                          alt="Popup image"
-                          style={{
-                            width: "100%",
-                            maxHeight: "150px",
-                            objectFit: "cover",
-                            borderRadius: "8px"
-                          }}
-                        />
-                      </div>
-                    )}
+                  </div>
+                  
+                  {/* Image Top - Outside content div to span full width */}
+                  {formData.imagePosition === "top" && formData.imageUrl && (
+                    <div style={{ 
+                      order: -1,
+                      width: "100%"
+                    }}>
+                      <img 
+                        src={formData.imageUrl} 
+                        alt="Popup image"
+                        style={{
+                          width: "100%",
+                          height: "200px",
+                          objectFit: "cover",
+                          borderRadius: formData.cornerRadius === "rounded" ? "12px 12px 0 0" : 
+                                      formData.cornerRadius === "square" ? "0" : "8px 8px 0 0",
+                          display: "block"
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  <div style={{ 
+                    flex: 1,
+                    order: formData.imagePosition === "right" ? 1 : 2,
+                    padding: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "32px" : 
+                            formData.imagePosition === "top" ? "24px 32px 32px 32px" : "0"
+                  }}>
                     
                     <div style={{ 
                       marginBottom: "24px",
@@ -933,18 +952,19 @@ export default function PopupEditor() {
                   {/* Image Right */}
                   {formData.imagePosition === "right" && formData.imageUrl && (
                     <div style={{ 
-                      marginLeft: "24px",
                       flexShrink: 0,
-                      order: 2
+                      order: 2,
+                      alignSelf: "stretch"
                     }}>
                       <img 
                         src={formData.imageUrl} 
                         alt="Popup image"
                         style={{
-                          width: "150px",
-                          height: "150px",
+                          width: "200px",
+                          height: "100%",
                           objectFit: "cover",
-                          borderRadius: "8px"
+                          borderRadius: formData.cornerRadius === "rounded" ? "0 12px 12px 0" : 
+                                      formData.cornerRadius === "square" ? "0" : "0 8px 8px 0"
                         }}
                       />
                     </div>

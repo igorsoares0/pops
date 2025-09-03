@@ -2,7 +2,7 @@
 
 client_id = "d56f6a153d77671df608136852e4c2a4"
 name = "pops"
-application_url = "https://topic-levels-worry-permit.trycloudflare.com"
+application_url = "https://cleared-identify-year-meetings.trycloudflare.com"
 embedded = true
 handle = "pops-2"
 
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "write_products"
 
 [auth]
-redirect_urls = ["https://topic-levels-worry-permit.trycloudflare.com/auth/callback", "https://topic-levels-worry-permit.trycloudflare.com/auth/shopify/callback", "https://topic-levels-worry-permit.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://cleared-identify-year-meetings.trycloudflare.com/auth/callback", "https://cleared-identify-year-meetings.trycloudflare.com/auth/shopify/callback", "https://cleared-identify-year-meetings.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
