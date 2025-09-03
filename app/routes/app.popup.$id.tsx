@@ -19,6 +19,8 @@ import {
   FormLayout,
   Banner,
   Divider,
+  DropZone,
+  Thumbnail,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -200,6 +202,8 @@ export default function PopupEditor() {
   const fetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
   const [selectedTab, setSelectedTab] = useState(0);
+  const [logoFiles, setLogoFiles] = useState<File[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState({
     // Rules
     discountType: popup.discountType || "percentage",
@@ -225,7 +229,7 @@ export default function PopupEditor() {
     displaySize: popup.displaySize || "standard",
     alignment: popup.alignment || "center",
     cornerRadius: popup.cornerRadius || "standard",
-    imagePosition: popup.imagePosition || "left",
+    imagePosition: popup.imagePosition || "none",
     hideOnMobile: popup.hideOnMobile,
     backgroundOnMobile: popup.backgroundOnMobile,
     imageUrl: popup.imageUrl || "",
@@ -272,6 +276,34 @@ export default function PopupEditor() {
 
   const updateFormData = (key: string, value: any) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleLogoUpload = (files: File[]) => {
+    setLogoFiles(files);
+    if (files.length > 0) {
+      const file = files[0];
+      const url = URL.createObjectURL(file);
+      updateFormData("logoUrl", url);
+    }
+  };
+
+  const handleImageUpload = (files: File[]) => {
+    setImageFiles(files);
+    if (files.length > 0) {
+      const file = files[0];
+      const url = URL.createObjectURL(file);
+      updateFormData("imageUrl", url);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoFiles([]);
+    updateFormData("logoUrl", "");
+  };
+
+  const removeImage = () => {
+    setImageFiles([]);
+    updateFormData("imageUrl", "");
   };
 
   const tabs = [
@@ -502,7 +534,20 @@ export default function PopupEditor() {
                     Less than 2MB. Accepts .jpg, .png, .gif, .jpeg recommended: 620 x 400 pixels.
                   </Text>
                   
-                  <Button>Add image</Button>
+                  {formData.logoUrl ? (
+                    <BlockStack gap="200">
+                      <Thumbnail
+                        source={formData.logoUrl}
+                        alt="Logo"
+                        size="large"
+                      />
+                      <Button onClick={removeLogo} size="micro">Remove logo</Button>
+                    </BlockStack>
+                  ) : (
+                    <DropZone onDrop={handleLogoUpload} accept="image/*" type="image">
+                      <DropZone.FileUpload actionTitle="Add logo" actionHint="or drop files to upload" />
+                    </DropZone>
+                  )}
                   
                   <Text as="p" variant="bodySm">Logo width</Text>
                   <RangeSlider
@@ -554,10 +599,11 @@ export default function PopupEditor() {
                   <Select
                     label="Image position"
                     options={[
+                      { label: "No image", value: "none" },
                       { label: "Left", value: "left" },
                       { label: "Right", value: "right" },
                       { label: "Top", value: "top" },
-                      { label: "Bottom", value: "bottom" },
+                      { label: "Background", value: "background" },
                     ]}
                     value={formData.imagePosition}
                     onChange={(value) => updateFormData("imagePosition", value)}
@@ -580,7 +626,20 @@ export default function PopupEditor() {
                     Less than 2MB. Accepts .jpg, .png, .gif, .jpeg recommended: 620 x 400 pixels.
                   </Text>
                   
-                  <Button>Add image</Button>
+                  {formData.imageUrl ? (
+                    <BlockStack gap="200">
+                      <Thumbnail
+                        source={formData.imageUrl}
+                        alt="Popup image"
+                        size="large"
+                      />
+                      <Button onClick={removeImage} size="micro">Remove image</Button>
+                    </BlockStack>
+                  ) : (
+                    <DropZone onDrop={handleImageUpload} accept="image/*" type="image">
+                      <DropZone.FileUpload actionTitle="Add image" actionHint="or drop files to upload" />
+                    </DropZone>
+                  )}
                   
                   <Divider />
                   
@@ -712,7 +771,14 @@ export default function PopupEditor() {
                   width: "90%",
                   textAlign: formData.alignment as any,
                   boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
-                  position: "relative"
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: formData.imagePosition === "top" ? "column" : "row",
+                  alignItems: formData.imagePosition === "left" || formData.imagePosition === "right" ? "flex-start" : "center",
+                  backgroundImage: formData.imagePosition === "background" && formData.imageUrl ? `url(${formData.imageUrl})` : "none",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat"
                 }}>
                   <button style={{
                     position: "absolute",
@@ -721,77 +787,168 @@ export default function PopupEditor() {
                     background: "none",
                     border: "none",
                     fontSize: "20px",
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    zIndex: 10
                   }}>×</button>
                   
-                  <div style={{ marginBottom: "24px" }}>
-                    <h2 style={{ 
-                      fontSize: "24px", 
-                      fontWeight: "600", 
-                      marginBottom: "12px",
-                      color: formData.textHeading
+                  {/* Image Left */}
+                  {formData.imagePosition === "left" && formData.imageUrl && (
+                    <div style={{ 
+                      marginRight: "24px",
+                      flexShrink: 0
                     }}>
-                      {formData.heading || "Get 10% OFF your order"}
-                    </h2>
-                    <p style={{ 
-                      color: formData.textDescription, 
-                      marginBottom: "0",
-                      fontSize: "16px"
+                      <img 
+                        src={formData.imageUrl} 
+                        alt="Popup image"
+                        style={{
+                          width: "150px",
+                          height: "150px",
+                          objectFit: "cover",
+                          borderRadius: "8px"
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  <div style={{ 
+                    flex: 1,
+                    order: formData.imagePosition === "right" ? 1 : 2
+                  }}>
+                    {/* Logo */}
+                    {formData.logoUrl && (
+                      <div style={{ 
+                        marginBottom: "16px",
+                        textAlign: formData.alignment as any
+                      }}>
+                        <img 
+                          src={formData.logoUrl} 
+                          alt="Logo"
+                          style={{
+                            maxWidth: `${formData.logoWidth}%`,
+                            height: "auto",
+                            maxHeight: "60px"
+                          }}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Image Top */}
+                    {formData.imagePosition === "top" && formData.imageUrl && (
+                      <div style={{ marginBottom: "24px" }}>
+                        <img 
+                          src={formData.imageUrl} 
+                          alt="Popup image"
+                          style={{
+                            width: "100%",
+                            maxHeight: "150px",
+                            objectFit: "cover",
+                            borderRadius: "8px"
+                          }}
+                        />
+                      </div>
+                    )}
+                    
+                    <div style={{ 
+                      marginBottom: "24px",
+                      position: "relative",
+                      zIndex: formData.imagePosition === "background" ? 5 : "auto",
+                      color: formData.imagePosition === "background" ? "#fff" : "inherit",
+                      textShadow: formData.imagePosition === "background" ? "0 1px 2px rgba(0,0,0,0.5)" : "none"
                     }}>
-                      {formData.description || "Sign up and unlock your instant discount."}
+                      <h2 style={{ 
+                        fontSize: "24px", 
+                        fontWeight: "600", 
+                        marginBottom: "12px",
+                        color: formData.imagePosition === "background" ? "#fff" : formData.textHeading
+                      }}>
+                        {formData.heading || "Get 10% OFF your order"}
+                      </h2>
+                      <p style={{ 
+                        color: formData.imagePosition === "background" ? "#fff" : formData.textDescription, 
+                        marginBottom: "0",
+                        fontSize: "16px"
+                      }}>
+                        {formData.description || "Sign up and unlock your instant discount."}
+                      </p>
+                    </div>
+                  
+                    <div style={{ 
+                      marginBottom: "24px",
+                      position: "relative",
+                      zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                    }}>
+                      <input
+                        type="email"
+                        placeholder={formData.emailPlaceholder || "Email address"}
+                        style={{
+                          width: "100%",
+                          padding: "12px",
+                          border: "1px solid #ddd",
+                          borderRadius: "6px",
+                          fontSize: "16px",
+                          marginBottom: "12px",
+                          color: formData.textInput
+                        }}
+                      />
+                      
+                      <button style={{
+                        backgroundColor: formData.primaryBtnBg,
+                        color: formData.primaryBtnText,
+                        border: "none",
+                        padding: "12px 24px",
+                        borderRadius: "6px",
+                        width: "100%",
+                        fontSize: "16px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                        marginBottom: "12px"
+                      }}>
+                        {formData.primaryButton || "Claim discount"}
+                      </button>
+                      
+                      <button style={{
+                        background: "none",
+                        border: "none",
+                        color: formData.imagePosition === "background" ? "#fff" : formData.secondaryBtnText,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        textDecoration: "underline"
+                      }}>
+                        {formData.secondaryButton || "No, thanks"}
+                      </button>
+                    </div>
+                    
+                    <p style={{
+                      fontSize: "12px",
+                      color: formData.imagePosition === "background" ? "#fff" : formData.textFooter,
+                      lineHeight: "1.4",
+                      margin: "0",
+                      position: "relative",
+                      zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                    }}>
+                      {formData.footerText || "You are signing up to receive communication via email and can unsubscribe at any time."}
                     </p>
                   </div>
                   
-                  <div style={{ marginBottom: "24px" }}>
-                    <input
-                      type="email"
-                      placeholder={formData.emailPlaceholder || "Email address"}
-                      style={{
-                        width: "100%",
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        borderRadius: "6px",
-                        fontSize: "16px",
-                        marginBottom: "12px",
-                        color: formData.textInput
-                      }}
-                    />
-                    
-                    <button style={{
-                      backgroundColor: formData.primaryBtnBg,
-                      color: formData.primaryBtnText,
-                      border: "none",
-                      padding: "12px 24px",
-                      borderRadius: "6px",
-                      width: "100%",
-                      fontSize: "16px",
-                      fontWeight: "500",
-                      cursor: "pointer",
-                      marginBottom: "12px"
+                  {/* Image Right */}
+                  {formData.imagePosition === "right" && formData.imageUrl && (
+                    <div style={{ 
+                      marginLeft: "24px",
+                      flexShrink: 0,
+                      order: 2
                     }}>
-                      {formData.primaryButton || "Claim discount"}
-                    </button>
-                    
-                    <button style={{
-                      background: "none",
-                      border: "none",
-                      color: formData.secondaryBtnText,
-                      fontSize: "14px",
-                      cursor: "pointer",
-                      textDecoration: "underline"
-                    }}>
-                      {formData.secondaryButton || "No, thanks"}
-                    </button>
-                  </div>
-                  
-                  <p style={{
-                    fontSize: "12px",
-                    color: formData.textFooter,
-                    lineHeight: "1.4",
-                    margin: "0"
-                  }}>
-                    {formData.footerText || "You are signing up to receive communication via email and can unsubscribe at any time."}
-                  </p>
+                      <img 
+                        src={formData.imageUrl} 
+                        alt="Popup image"
+                        style={{
+                          width: "150px",
+                          height: "150px",
+                          objectFit: "cover",
+                          borderRadius: "8px"
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </Box>

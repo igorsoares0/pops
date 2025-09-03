@@ -61,7 +61,7 @@ model Popup {
   displaySize       String?   @default("standard")
   alignment         String?   @default("center")
   cornerRadius      String?   @default("standard")
-  imagePosition     String?   @default("left")
+  imagePosition     String?   @default("none")
   hideOnMobile      Boolean   @default(false)
   backgroundOnMobile Boolean  @default(false)
   imageUrl          String?
