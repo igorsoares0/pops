@@ -23,6 +23,7 @@ import {
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { db } from "../db.server";
+import { ColorPickerField } from "../components/ColorPickerField";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -135,6 +136,52 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const imageUrl = formData.get("imageUrl") as string;
   if (imageUrl !== null) updateData.imageUrl = imageUrl;
 
+  // Colors
+  const popupBackground = formData.get("popupBackground") as string;
+  if (popupBackground !== null) updateData.popupBackground = popupBackground;
+  
+  const textHeading = formData.get("textHeading") as string;
+  if (textHeading !== null) updateData.textHeading = textHeading;
+  
+  const textDescription = formData.get("textDescription") as string;
+  if (textDescription !== null) updateData.textDescription = textDescription;
+  
+  const textInput = formData.get("textInput") as string;
+  if (textInput !== null) updateData.textInput = textInput;
+  
+  const textConsent = formData.get("textConsent") as string;
+  if (textConsent !== null) updateData.textConsent = textConsent;
+  
+  const textError = formData.get("textError") as string;
+  if (textError !== null) updateData.textError = textError;
+  
+  const textLabel = formData.get("textLabel") as string;
+  if (textLabel !== null) updateData.textLabel = textLabel;
+  
+  const textFooter = formData.get("textFooter") as string;
+  if (textFooter !== null) updateData.textFooter = textFooter;
+  
+  const primaryBtnBg = formData.get("primaryBtnBg") as string;
+  if (primaryBtnBg !== null) updateData.primaryBtnBg = primaryBtnBg;
+  
+  const primaryBtnText = formData.get("primaryBtnText") as string;
+  if (primaryBtnText !== null) updateData.primaryBtnText = primaryBtnText;
+  
+  const secondaryBtnText = formData.get("secondaryBtnText") as string;
+  if (secondaryBtnText !== null) updateData.secondaryBtnText = secondaryBtnText;
+  
+  const stickyBarBg = formData.get("stickyBarBg") as string;
+  if (stickyBarBg !== null) updateData.stickyBarBg = stickyBarBg;
+  
+  const stickyBarText = formData.get("stickyBarText") as string;
+  if (stickyBarText !== null) updateData.stickyBarText = stickyBarText;
+  
+  const sidebarBg = formData.get("sidebarBg") as string;
+  if (sidebarBg !== null) updateData.sidebarBg = sidebarBg;
+  
+  const sidebarText = formData.get("sidebarText") as string;
+  if (sidebarText !== null) updateData.sidebarText = sidebarText;
+
   try {
     await db.popup.update({
       where: { id, shop: session.shop },
@@ -182,6 +229,23 @@ export default function PopupEditor() {
     hideOnMobile: popup.hideOnMobile,
     backgroundOnMobile: popup.backgroundOnMobile,
     imageUrl: popup.imageUrl || "",
+    
+    // Colors
+    popupBackground: popup.popupBackground || "#FFFFFF",
+    textHeading: popup.textHeading || "#000000",
+    textDescription: popup.textDescription || "#666666",
+    textInput: popup.textInput || "#000000",
+    textConsent: popup.textConsent || "#666666",
+    textError: popup.textError || "#FF0000",
+    textLabel: popup.textLabel || "#000000",
+    textFooter: popup.textFooter || "#999999",
+    primaryBtnBg: popup.primaryBtnBg || "#000000",
+    primaryBtnText: popup.primaryBtnText || "#FFFFFF",
+    secondaryBtnText: popup.secondaryBtnText || "#666666",
+    stickyBarBg: popup.stickyBarBg || "#FFFFFF",
+    stickyBarText: popup.stickyBarText || "#000000",
+    sidebarBg: popup.sidebarBg || "#000000",
+    sidebarText: popup.sidebarText || "#FFFFFF",
   });
 
   useEffect(() => {
@@ -520,6 +584,97 @@ export default function PopupEditor() {
                   
                   <Divider />
                   
+                  <Text as="h4" variant="headingMd">Colors</Text>
+                  
+                  <Text as="h5" variant="headingSm">POPUP</Text>
+                  <ColorPickerField
+                    label="Background"
+                    value={formData.popupBackground}
+                    onChange={(value) => updateFormData("popupBackground", value)}
+                  />
+                  
+                  <Text as="h5" variant="headingSm">TEXT</Text>
+                  <ColorPickerField
+                    label="Heading"
+                    value={formData.textHeading}
+                    onChange={(value) => updateFormData("textHeading", value)}
+                  />
+                  <ColorPickerField
+                    label="Description"
+                    value={formData.textDescription}
+                    onChange={(value) => updateFormData("textDescription", value)}
+                  />
+                  <ColorPickerField
+                    label="Input"
+                    value={formData.textInput}
+                    onChange={(value) => updateFormData("textInput", value)}
+                  />
+                  <ColorPickerField
+                    label="Consent"
+                    value={formData.textConsent}
+                    onChange={(value) => updateFormData("textConsent", value)}
+                  />
+                  <ColorPickerField
+                    label="Error"
+                    value={formData.textError}
+                    onChange={(value) => updateFormData("textError", value)}
+                  />
+                  <ColorPickerField
+                    label="Label"
+                    value={formData.textLabel}
+                    onChange={(value) => updateFormData("textLabel", value)}
+                  />
+                  <ColorPickerField
+                    label="Footer text"
+                    value={formData.textFooter}
+                    onChange={(value) => updateFormData("textFooter", value)}
+                  />
+                  
+                  <Text as="h5" variant="headingSm">PRIMARY BUTTON</Text>
+                  <ColorPickerField
+                    label="Background"
+                    value={formData.primaryBtnBg}
+                    onChange={(value) => updateFormData("primaryBtnBg", value)}
+                  />
+                  <ColorPickerField
+                    label="Text"
+                    value={formData.primaryBtnText}
+                    onChange={(value) => updateFormData("primaryBtnText", value)}
+                  />
+                  
+                  <Text as="h5" variant="headingSm">SECONDARY BUTTON</Text>
+                  <ColorPickerField
+                    label="Text"
+                    value={formData.secondaryBtnText}
+                    onChange={(value) => updateFormData("secondaryBtnText", value)}
+                  />
+                  
+                  <Text as="h5" variant="headingSm">Sticky discount bar</Text>
+                  <ColorPickerField
+                    label="Background"
+                    value={formData.stickyBarBg}
+                    onChange={(value) => updateFormData("stickyBarBg", value)}
+                  />
+                  <ColorPickerField
+                    label="Text"
+                    value={formData.stickyBarText}
+                    onChange={(value) => updateFormData("stickyBarText", value)}
+                  />
+                  
+                  <Text as="h5" variant="headingSm">Sidebar widget</Text>
+                  <ColorPickerField
+                    label="Background"
+                    value={formData.sidebarBg}
+                    onChange={(value) => updateFormData("sidebarBg", value)}
+                  />
+                  <ColorPickerField
+                    label="Text"
+                    value={formData.sidebarText}
+                    onChange={(value) => updateFormData("sidebarText", value)}
+                  />
+                  
+                  <Divider />
+                  
                   <InlineStack gap="300">
                     <Button 
                       variant="primary" 
@@ -548,7 +703,7 @@ export default function PopupEditor() {
                 position: "relative"
               }}>
                 <div style={{
-                  backgroundColor: "white",
+                  backgroundColor: formData.popupBackground,
                   padding: "32px",
                   borderRadius: formData.cornerRadius === "rounded" ? "12px" : 
                               formData.cornerRadius === "square" ? "0px" : "8px",
@@ -574,12 +729,12 @@ export default function PopupEditor() {
                       fontSize: "24px", 
                       fontWeight: "600", 
                       marginBottom: "12px",
-                      color: "#000"
+                      color: formData.textHeading
                     }}>
                       {formData.heading || "Get 10% OFF your order"}
                     </h2>
                     <p style={{ 
-                      color: "#666", 
+                      color: formData.textDescription, 
                       marginBottom: "0",
                       fontSize: "16px"
                     }}>
@@ -597,13 +752,14 @@ export default function PopupEditor() {
                         border: "1px solid #ddd",
                         borderRadius: "6px",
                         fontSize: "16px",
-                        marginBottom: "12px"
+                        marginBottom: "12px",
+                        color: formData.textInput
                       }}
                     />
                     
                     <button style={{
-                      backgroundColor: "#000",
-                      color: "white",
+                      backgroundColor: formData.primaryBtnBg,
+                      color: formData.primaryBtnText,
                       border: "none",
                       padding: "12px 24px",
                       borderRadius: "6px",
@@ -619,7 +775,7 @@ export default function PopupEditor() {
                     <button style={{
                       background: "none",
                       border: "none",
-                      color: "#666",
+                      color: formData.secondaryBtnText,
                       fontSize: "14px",
                       cursor: "pointer",
                       textDecoration: "underline"
@@ -630,7 +786,7 @@ export default function PopupEditor() {
                   
                   <p style={{
                     fontSize: "12px",
-                    color: "#999",
+                    color: formData.textFooter,
                     lineHeight: "1.4",
                     margin: "0"
                   }}>

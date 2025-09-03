@@ -66,6 +66,23 @@ model Popup {
   backgroundOnMobile Boolean  @default(false)
   imageUrl          String?
   
+  // Colors
+  popupBackground   String?   @default("#FFFFFF")
+  textHeading       String?   @default("#000000")
+  textDescription   String?   @default("#666666")
+  textInput         String?   @default("#000000")
+  textConsent       String?   @default("#666666")
+  textError         String?   @default("#FF0000")
+  textLabel         String?   @default("#000000")
+  textFooter        String?   @default("#999999")
+  primaryBtnBg      String?   @default("#000000")
+  primaryBtnText    String?   @default("#FFFFFF")
+  secondaryBtnText  String?   @default("#666666")
+  stickyBarBg       String?   @default("#FFFFFF")
+  stickyBarText     String?   @default("#000000")
+  sidebarBg         String?   @default("#000000")
+  sidebarText       String?   @default("#FFFFFF")
+  
   // Analytics
   views             Int       @default(0)
   subscribers       Int       @default(0)
