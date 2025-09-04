@@ -222,6 +222,7 @@ export default function PopupEditor() {
   const shopify = useAppBridge();
   const [selectedTab, setSelectedTab] = useState(0);
   const [previewStep, setPreviewStep] = useState(0);
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [logoFiles, setLogoFiles] = useState<File[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState({
@@ -1220,92 +1221,346 @@ export default function PopupEditor() {
           alignSelf: "start"
         }}>
           <Card style={{ height: "100%", overflow: "hidden" }}>
-            {formData.isMultiStep && formData.sections.length > 1 && (
-              <BlockStack gap="300">
-                <InlineStack align="space-between">
-                  <Text as="h3" variant="headingMd">
-                    Step {previewStep + 1} of {formData.sections.length}: {formData.sections[previewStep]?.title}
-                  </Text>
-                  <InlineStack gap="200">
-                    <Button
-                      size="micro"
-                      onClick={prevStep}
-                      disabled={previewStep === 0}
-                    >
-                      ← Previous
-                    </Button>
-                    <Button
-                      size="micro"
-                      onClick={nextStep}
-                      disabled={previewStep === formData.sections.length - 1}
-                    >
-                      Next →
-                    </Button>
+            <BlockStack gap="300">
+              {/* Device Toggle */}
+              <InlineStack align="space-between">
+                <Text as="h3" variant="headingMd">Preview</Text>
+                <InlineStack gap="200">
+                  <Button 
+                    size="micro" 
+                    variant={previewDevice === 'desktop' ? 'primary' : 'secondary'}
+                    onClick={() => setPreviewDevice('desktop')}
+                  >
+                    Desktop
+                  </Button>
+                  <Button 
+                    size="micro" 
+                    variant={previewDevice === 'mobile' ? 'primary' : 'secondary'}
+                    onClick={() => setPreviewDevice('mobile')}
+                  >
+                    Mobile
+                  </Button>
+                </InlineStack>
+              </InlineStack>
+
+              {formData.isMultiStep && formData.sections.length > 1 && (
+                <BlockStack gap="300">
+                  <InlineStack align="space-between">
+                    <Text as="p" variant="bodyMd">
+                      Step {previewStep + 1} of {formData.sections.length}: {formData.sections[previewStep]?.title}
+                    </Text>
+                    <InlineStack gap="200">
+                      <Button
+                        size="micro"
+                        onClick={prevStep}
+                        disabled={previewStep === 0}
+                      >
+                        ← Previous
+                      </Button>
+                      <Button
+                        size="micro"
+                        onClick={nextStep}
+                        disabled={previewStep === formData.sections.length - 1}
+                      >
+                        Next →
+                      </Button>
+                    </InlineStack>
                   </InlineStack>
-                </InlineStack>
-                
-                {/* Step indicator */}
-                <InlineStack gap="100">
-                  {formData.sections.map((_, index: number) => (
-                    <button
-                      key={index}
-                      onClick={() => goToStep(index)}
-                      style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        border: "none",
-                        backgroundColor: index === previewStep ? "#000" : "#ccc",
-                        cursor: "pointer"
-                      }}
-                    />
-                  ))}
-                </InlineStack>
-                
-                <Divider />
-              </BlockStack>
-            )}
+                  
+                  {/* Step indicator */}
+                  <InlineStack gap="100">
+                    {formData.sections.map((_, index: number) => (
+                      <button
+                        key={index}
+                        onClick={() => goToStep(index)}
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          border: "none",
+                          backgroundColor: index === previewStep ? "#000" : "#ccc",
+                          cursor: "pointer"
+                        }}
+                      />
+                    ))}
+                  </InlineStack>
+                </BlockStack>
+              )}
+              
+              <Divider />
+            </BlockStack>
             <Box padding="600">
               <div style={{ 
                 display: "flex", 
                 justifyContent: "center", 
                 alignItems: "center", 
-                minHeight: "400px",
+                minHeight: previewDevice === 'mobile' ? "600px" : "400px",
                 backgroundColor: "#f5f5f5",
                 position: "relative"
               }}>
-                <div style={{
-                  backgroundColor: formData.popupBackground,
-                  padding: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "0" : 
-                          formData.imagePosition === "top" ? "0 32px 32px 32px" : "32px",
-                  borderRadius: formData.cornerRadius === "rounded" ? "12px" : 
-                              formData.cornerRadius === "square" ? "0px" : "8px",
-                  maxWidth: formData.displaySize === "large" ? "600px" : 
-                           formData.displaySize === "small" ? "400px" : "500px",
-                  width: "90%",
-                  textAlign: formData.alignment as any,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: formData.imagePosition === "top" ? "column" : "row",
-                  alignItems: formData.imagePosition === "left" || formData.imagePosition === "right" ? "stretch" : "center",
-                  backgroundImage: formData.imagePosition === "background" && formData.imageUrl ? `url(${formData.imageUrl})` : "none",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                  minHeight: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "400px" : "auto",
-                  overflow: "hidden"
-                }}>
-                  <button style={{
-                    position: "absolute",
-                    top: "16px",
-                    right: "16px",
-                    background: "none",
-                    border: "none",
-                    fontSize: "20px",
-                    cursor: "pointer",
-                    zIndex: 10
-                  }}>×</button>
+                {/* Mobile Frame */}
+                {previewDevice === 'mobile' && (
+                  <div style={{
+                    width: "320px",
+                    height: "568px",
+                    backgroundColor: "#000",
+                    borderRadius: "30px",
+                    padding: "20px 10px",
+                    position: "relative",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "flex-start",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
+                  }}>
+                    {/* Screen */}
+                    <div style={{
+                      width: "100%",
+                      height: "100%",
+                      backgroundColor: "#f5f5f5",
+                      borderRadius: "20px",
+                      overflow: "auto",
+                      position: "relative"
+                    }}>
+                      {/* Mobile Popup */}
+                      <div style={{
+                        backgroundColor: formData.popupBackground,
+                        padding: formData.hideOnMobile ? "0" : 
+                               formData.backgroundOnMobile ? "20px" :
+                               (formData.imagePosition === "left" || formData.imagePosition === "right") ? "0" : 
+                               formData.imagePosition === "top" ? "0 20px 20px 20px" : "20px",
+                        borderRadius: formData.cornerRadius === "rounded" ? "12px" : 
+                                    formData.cornerRadius === "square" ? "0px" : "8px",
+                        width: formData.hideOnMobile ? "0" : "100%",
+                        height: formData.hideOnMobile ? "0" : "auto",
+                        visibility: formData.hideOnMobile ? "hidden" : "visible",
+                        textAlign: formData.alignment as any,
+                        boxShadow: formData.hideOnMobile ? "none" : "0 4px 16px rgba(0,0,0,0.1)",
+                        position: "relative",
+                        display: formData.hideOnMobile ? "none" : "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        backgroundImage: formData.imagePosition === "background" && formData.imageUrl ? `url(${formData.imageUrl})` : "none",
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        backgroundRepeat: "no-repeat",
+                        overflow: "hidden",
+                        margin: "20px auto",
+                        maxHeight: "500px"
+                      }}>
+                        {!formData.hideOnMobile && (
+                          <>
+                            <button style={{
+                              position: "absolute",
+                              top: "12px",
+                              right: "12px",
+                              background: "none",
+                              border: "none",
+                              fontSize: "18px",
+                              cursor: "pointer",
+                              zIndex: 10,
+                              color: formData.imagePosition === "background" ? "#fff" : "#000"
+                            }}>×</button>
+                            
+                            {/* Mobile Image Top */}
+                            {formData.imagePosition === "top" && formData.imageUrl && (
+                              <div style={{ width: "100%" }}>
+                                <img 
+                                  src={formData.imageUrl} 
+                                  alt="Popup image"
+                                  style={{
+                                    width: "100%",
+                                    height: "120px",
+                                    objectFit: "cover",
+                                    borderRadius: formData.cornerRadius === "rounded" ? "12px 12px 0 0" : 
+                                                formData.cornerRadius === "square" ? "0" : "8px 8px 0 0",
+                                    display: "block"
+                                  }}
+                                />
+                              </div>
+                            )}
+                            
+                            <div style={{ 
+                              width: "100%",
+                              padding: formData.imagePosition === "top" ? "16px 20px 20px 20px" : "0"
+                            }}>
+                              {/* Mobile Logo */}
+                              {formData.logoUrl && (
+                                <div style={{ 
+                                  marginBottom: "12px",
+                                  textAlign: formData.alignment as any
+                                }}>
+                                  <img 
+                                    src={formData.logoUrl} 
+                                    alt="Logo"
+                                    style={{
+                                      maxWidth: `${Math.min(formData.logoWidth, 60)}%`,
+                                      height: "auto",
+                                      maxHeight: "40px"
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              
+                              <div style={{ 
+                                marginBottom: "16px",
+                                position: "relative",
+                                zIndex: formData.imagePosition === "background" ? 5 : "auto",
+                                color: formData.imagePosition === "background" ? "#fff" : "inherit",
+                                textShadow: formData.imagePosition === "background" ? "0 1px 2px rgba(0,0,0,0.5)" : "none"
+                              }}>
+                                <h2 style={{ 
+                                  fontSize: "20px", 
+                                  fontWeight: "600", 
+                                  marginBottom: "8px",
+                                  color: formData.imagePosition === "background" ? "#fff" : formData.textHeading
+                                }}>
+                                  {currentSection.content.heading || "Get 10% OFF your order"}
+                                </h2>
+                                <p style={{ 
+                                  color: formData.imagePosition === "background" ? "#fff" : formData.textDescription, 
+                                  marginBottom: "0",
+                                  fontSize: "14px"
+                                }}>
+                                  {currentSection.content.description || "Sign up and unlock your instant discount."}
+                                </p>
+                              </div>
+                            
+                              <div style={{ 
+                                marginBottom: "16px",
+                                position: "relative",
+                                zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                              }}>
+                                {currentSection.type === "email_capture" && (
+                                  <input
+                                    type="email"
+                                    placeholder={currentSection.content.emailPlaceholder || "Email address"}
+                                    style={{
+                                      width: "100%",
+                                      padding: "10px",
+                                      border: "1px solid #ddd",
+                                      borderRadius: "6px",
+                                      fontSize: "14px",
+                                      marginBottom: "10px",
+                                      color: formData.textInput,
+                                      boxSizing: "border-box"
+                                    }}
+                                  />
+                                )}
+                                
+                                <button style={{
+                                  backgroundColor: formData.primaryBtnBg,
+                                  color: formData.primaryBtnText,
+                                  border: "none",
+                                  padding: "10px 20px",
+                                  borderRadius: "6px",
+                                  width: "100%",
+                                  fontSize: "14px",
+                                  fontWeight: "500",
+                                  cursor: "pointer",
+                                  marginBottom: "10px"
+                                }}>
+                                  {currentSection.content.primaryButton || currentSection.content.buttonText || "Claim discount"}
+                                </button>
+                                
+                                {currentSection.type === "email_capture" && currentSection.content.secondaryButton && (
+                                  <button style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: formData.imagePosition === "background" ? "#fff" : formData.secondaryBtnText,
+                                    fontSize: "12px",
+                                    cursor: "pointer",
+                                    textDecoration: "underline"
+                                  }}>
+                                    {currentSection.content.secondaryButton}
+                                  </button>
+                                )}
+                                
+                                {/* Custom Buttons */}
+                                {formData.customButtons.map((button: any) => (
+                                  <button 
+                                    key={button.id}
+                                    style={{
+                                      backgroundColor: button.style === "outline" ? "transparent" : formData.customBtnBg,
+                                      color: button.style === "outline" ? formData.customBtnBg : formData.customBtnText,
+                                      border: button.style === "outline" ? `1px solid ${formData.customBtnBg}` : "none",
+                                      padding: "6px 12px",
+                                      borderRadius: "6px",
+                                      width: "100%",
+                                      fontSize: "12px",
+                                      fontWeight: "500",
+                                      cursor: "pointer",
+                                      marginTop: "6px",
+                                      textDecoration: button.style === "plain" ? "underline" : "none",
+                                      background: button.style === "plain" ? "none" : undefined
+                                    }}
+                                  >
+                                    {button.text}
+                                  </button>
+                                ))}
+                              </div>
+                              
+                              <p style={{
+                                fontSize: "10px",
+                                color: formData.imagePosition === "background" ? "#fff" : formData.textFooter,
+                                lineHeight: "1.3",
+                                margin: "0",
+                                position: "relative",
+                                zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                              }}>
+                                {formData.footerText || "You are signing up to receive communication via email and can unsubscribe at any time."}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                        
+                        {formData.hideOnMobile && (
+                          <div style={{ 
+                            padding: "40px 20px", 
+                            textAlign: "center",
+                            color: "#666"
+                          }}>
+                            <p>Popup is hidden on mobile</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Desktop Popup */}
+                {previewDevice === 'desktop' && (
+                  <div style={{
+                    backgroundColor: formData.popupBackground,
+                    padding: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "0" : 
+                            formData.imagePosition === "top" ? "0 32px 32px 32px" : "32px",
+                    borderRadius: formData.cornerRadius === "rounded" ? "12px" : 
+                                formData.cornerRadius === "square" ? "0px" : "8px",
+                    maxWidth: formData.displaySize === "large" ? "600px" : 
+                             formData.displaySize === "small" ? "400px" : "500px",
+                    width: "90%",
+                    textAlign: formData.alignment as any,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+                    position: "relative",
+                    display: "flex",
+                    flexDirection: formData.imagePosition === "top" ? "column" : "row",
+                    alignItems: formData.imagePosition === "left" || formData.imagePosition === "right" ? "stretch" : "center",
+                    backgroundImage: formData.imagePosition === "background" && formData.imageUrl ? `url(${formData.imageUrl})` : "none",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                    minHeight: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "400px" : "auto",
+                    overflow: "hidden"
+                  }}>
+                    <button style={{
+                      position: "absolute",
+                      top: "16px",
+                      right: "16px",
+                      background: "none",
+                      border: "none",
+                      fontSize: "20px",
+                      cursor: "pointer",
+                      zIndex: 10
+                    }}>×</button>
                   
                   {/* Image Left */}
                   {formData.imagePosition === "left" && formData.imageUrl && (
@@ -1326,31 +1581,6 @@ export default function PopupEditor() {
                       />
                     </div>
                   )}
-                  
-                  <div style={{ 
-                    flex: 1,
-                    order: formData.imagePosition === "right" ? 1 : 2,
-                    padding: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "32px" : "0"
-                  }}>
-                    {/* Logo */}
-                    {formData.logoUrl && (
-                      <div style={{ 
-                        marginBottom: "16px",
-                        textAlign: formData.alignment as any
-                      }}>
-                        <img 
-                          src={formData.logoUrl} 
-                          alt="Logo"
-                          style={{
-                            maxWidth: `${formData.logoWidth}%`,
-                            height: "auto",
-                            maxHeight: "60px"
-                          }}
-                        />
-                      </div>
-                    )}
-                    
-                  </div>
                   
                   {/* Image Top - Outside content div to span full width */}
                   {formData.imagePosition === "top" && formData.imageUrl && (
@@ -1509,7 +1739,8 @@ export default function PopupEditor() {
                       />
                     </div>
                   )}
-                </div>
+                  </div>
+                )}
               </div>
             </Box>
           </Card>
