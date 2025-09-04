@@ -37,6 +37,10 @@ model Popup {
   name              String
   isActive          Boolean   @default(true)
   
+  // Multi-step functionality
+  isMultiStep       Boolean   @default(false)
+  sections          String?   // JSON array of sections
+  
   // Rules
   discountType      String?   // "percentage" | "fixed" | "none"
   discountValue     Float?

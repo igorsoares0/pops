@@ -145,6 +145,11 @@ export default function Index() {
                   <Text as="h2" variant="headingMd">
                     Popup library
                   </Text>
+                  <Link to="/app/popup/new">
+                    <Button variant="primary" icon={PlusIcon}>
+                      New popup
+                    </Button>
+                  </Link>
                 </InlineStack>
                 
                 {popups.length === 0 ? (

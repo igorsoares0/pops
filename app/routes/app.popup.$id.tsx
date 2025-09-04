@@ -15,6 +15,7 @@ import {
   Text,
   Tabs,
   Box,
+  Badge,
   RangeSlider,
   FormLayout,
   Banner,
@@ -67,6 +68,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   }
 
   const updateData: any = {};
+  
+  // Multi-step tab
+  const isMultiStep = formData.get("isMultiStep");
+  if (isMultiStep !== null) updateData.isMultiStep = isMultiStep === "true";
+  
+  const sections = formData.get("sections") as string;
+  if (sections !== null) updateData.sections = sections;
   
   // Rules tab
   const discountType = formData.get("discountType") as string;
@@ -213,9 +221,26 @@ export default function PopupEditor() {
   const fetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
   const [selectedTab, setSelectedTab] = useState(0);
+  const [previewStep, setPreviewStep] = useState(0);
   const [logoFiles, setLogoFiles] = useState<File[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState({
+    // Multi-step
+    isMultiStep: popup.isMultiStep || false,
+    sections: popup.sections ? JSON.parse(popup.sections) : [{
+      id: 1,
+      type: "email_capture",
+      title: "Email Capture",
+      order: 0,
+      content: {
+        heading: popup.heading || "Get 10% OFF your order",
+        description: popup.description || "Sign up and unlock your instant discount.",
+        emailPlaceholder: popup.emailPlaceholder || "Email address",
+        primaryButton: popup.primaryButton || "Claim discount",
+        secondaryButton: popup.secondaryButton || "No, thanks"
+      }
+    }],
+    
     // Rules
     discountType: popup.discountType || "percentage",
     discountValue: popup.discountValue || 10,
@@ -279,7 +304,7 @@ export default function PopupEditor() {
   const handleSave = () => {
     const form = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      if (key === "customButtons") {
+      if (key === "customButtons" || key === "sections") {
         form.append(key, JSON.stringify(value));
       } else {
         form.append(key, value.toString());
@@ -349,7 +374,132 @@ export default function PopupEditor() {
     updateFormData("customButtons", filteredButtons);
   };
 
+  // Section management functions
+  const addSection = (type: "intro" | "email_capture" | "custom") => {
+    const newSection = {
+      id: Date.now(),
+      type,
+      title: type === "intro" ? "Introduction" : type === "email_capture" ? "Email Capture" : "Custom Section",
+      order: formData.sections.length,
+      content: type === "intro" 
+        ? {
+            heading: "Welcome!",
+            description: "Discover our amazing products",
+            buttonText: "Continue",
+            imageUrl: ""
+          }
+        : type === "email_capture"
+        ? {
+            heading: "Get 10% OFF your order",
+            description: "Sign up and unlock your instant discount.",
+            emailPlaceholder: "Email address",
+            primaryButton: "Claim discount",
+            secondaryButton: "No, thanks"
+          }
+        : {
+            heading: "Custom Section",
+            description: "Add your custom content here",
+            buttonText: "Next"
+          }
+    };
+    updateFormData("sections", [...formData.sections, newSection]);
+  };
+
+  const updateSection = (id: number, field: string, value: any) => {
+    const updatedSections = formData.sections.map((section: any) =>
+      section.id === id ? { ...section, [field]: value } : section
+    );
+    updateFormData("sections", updatedSections);
+  };
+
+  const updateSectionContent = (id: number, contentField: string, value: string) => {
+    const updatedSections = formData.sections.map((section: any) =>
+      section.id === id 
+        ? { ...section, content: { ...section.content, [contentField]: value } }
+        : section
+    );
+    updateFormData("sections", updatedSections);
+  };
+
+  const removeSection = (id: number) => {
+    const filteredSections = formData.sections.filter((section: any) => section.id !== id);
+    // Reorder sections
+    const reorderedSections = filteredSections.map((section: any, index: number) => ({
+      ...section,
+      order: index
+    }));
+    updateFormData("sections", reorderedSections);
+  };
+
+  const moveSection = (id: number, direction: "up" | "down") => {
+    const currentIndex = formData.sections.findIndex((section: any) => section.id === id);
+    if (
+      (direction === "up" && currentIndex === 0) ||
+      (direction === "down" && currentIndex === formData.sections.length - 1)
+    ) return;
+
+    const newSections = [...formData.sections];
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    
+    [newSections[currentIndex], newSections[targetIndex]] = [newSections[targetIndex], newSections[currentIndex]];
+    
+    // Update order
+    const reorderedSections = newSections.map((section: any, index: number) => ({
+      ...section,
+      order: index
+    }));
+    
+    updateFormData("sections", reorderedSections);
+  };
+
+  // Preview navigation functions
+  const nextStep = () => {
+    if (previewStep < formData.sections.length - 1) {
+      setPreviewStep(previewStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (previewStep > 0) {
+      setPreviewStep(previewStep - 1);
+    }
+  };
+
+  const goToStep = (step: number) => {
+    if (step >= 0 && step < formData.sections.length) {
+      setPreviewStep(step);
+    }
+  };
+
+  // Reset preview step when multi-step is toggled or sections change
+  useEffect(() => {
+    if (!formData.isMultiStep || previewStep >= formData.sections.length) {
+      setPreviewStep(0);
+    }
+  }, [formData.isMultiStep, formData.sections.length, previewStep]);
+
+  // Get current section for preview
+  const getCurrentSection = () => {
+    if (!formData.isMultiStep || formData.sections.length === 0) {
+      // Return default single-step content
+      return {
+        type: "email_capture",
+        content: {
+          heading: formData.heading || "Get 10% OFF your order",
+          description: formData.description || "Sign up and unlock your instant discount.",
+          emailPlaceholder: formData.emailPlaceholder || "Email address",
+          primaryButton: formData.primaryButton || "Claim discount",
+          secondaryButton: formData.secondaryButton || "No, thanks"
+        }
+      };
+    }
+    return formData.sections[previewStep] || formData.sections[0];
+  };
+
+  const currentSection = getCurrentSection();
+
   const tabs = [
+    { id: "steps", content: "Steps" },
     { id: "rules", content: "Rules" },
     { id: "content", content: "Content" },
     { id: "style", content: "Style" },
@@ -382,8 +532,197 @@ export default function PopupEditor() {
                 onSelect={setSelectedTab}
               />
               
-              {/* Rules Tab */}
+              {/* Steps Tab */}
               {selectedTab === 0 && (
+                <BlockStack gap="400">
+                  <Text as="h4" variant="headingMd">Popup Steps</Text>
+                  <Text as="p" variant="bodyMd">
+                    Configure multiple steps for your popup to create a more engaging experience.
+                  </Text>
+                  
+                  <Checkbox
+                    label="Enable multi-step popup"
+                    checked={formData.isMultiStep}
+                    onChange={(checked) => updateFormData("isMultiStep", checked)}
+                    helpText="When enabled, users will navigate through multiple sections before reaching the final action."
+                  />
+                  
+                  {formData.isMultiStep && (
+                    <BlockStack gap="400">
+                      <InlineStack align="space-between">
+                        <Text as="h5" variant="headingSm">SECTIONS ({formData.sections.length})</Text>
+                        <Button 
+                          size="micro" 
+                          onClick={() => addSection("intro")}
+                          icon={PlusIcon}
+                        >
+                          Add Section
+                        </Button>
+                      </InlineStack>
+                      
+                      {formData.sections.map((section: any, index: number) => (
+                        <Card key={section.id}>
+                          <BlockStack gap="300">
+                            <InlineStack gap="300" align="space-between">
+                              <InlineStack gap="200" align="center">
+                                <Text as="span" variant="bodyMd" tone="subdued">#{index + 1}</Text>
+                                <Text as="h6" variant="headingSm">{section.title}</Text>
+                                <Badge tone={section.type === "email_capture" ? "success" : section.type === "intro" ? "info" : "attention"}>
+                                  {section.type.replace("_", " ")}
+                                </Badge>
+                              </InlineStack>
+                              
+                              <InlineStack gap="200">
+                                <Button
+                                  size="micro"
+                                  variant="plain"
+                                  onClick={() => moveSection(section.id, "up")}
+                                  disabled={index === 0}
+                                >
+                                  ↑
+                                </Button>
+                                <Button
+                                  size="micro"
+                                  variant="plain"
+                                  onClick={() => moveSection(section.id, "down")}
+                                  disabled={index === formData.sections.length - 1}
+                                >
+                                  ↓
+                                </Button>
+                                <Button 
+                                  size="micro" 
+                                  variant="plain" 
+                                  onClick={() => removeSection(section.id)}
+                                  icon={DeleteIcon}
+                                  disabled={formData.sections.length === 1}
+                                />
+                              </InlineStack>
+                            </InlineStack>
+                            
+                            <Select
+                              label="Section type"
+                              options={[
+                                { label: "Introduction", value: "intro" },
+                                { label: "Email Capture", value: "email_capture" },
+                                { label: "Custom", value: "custom" },
+                              ]}
+                              value={section.type}
+                              onChange={(value) => updateSection(section.id, "type", value)}
+                            />
+                            
+                            <TextField
+                              label="Section title"
+                              value={section.title}
+                              onChange={(value) => updateSection(section.id, "title", value)}
+                              placeholder="Enter section title"
+                            />
+                            
+                            {section.type === "intro" && (
+                              <BlockStack gap="300">
+                                <TextField
+                                  label="Heading"
+                                  value={section.content.heading}
+                                  onChange={(value) => updateSectionContent(section.id, "heading", value)}
+                                />
+                                <TextField
+                                  label="Description"
+                                  value={section.content.description}
+                                  onChange={(value) => updateSectionContent(section.id, "description", value)}
+                                  multiline={3}
+                                />
+                                <TextField
+                                  label="Button text"
+                                  value={section.content.buttonText}
+                                  onChange={(value) => updateSectionContent(section.id, "buttonText", value)}
+                                />
+                              </BlockStack>
+                            )}
+                            
+                            {section.type === "email_capture" && (
+                              <BlockStack gap="300">
+                                <TextField
+                                  label="Heading"
+                                  value={section.content.heading}
+                                  onChange={(value) => updateSectionContent(section.id, "heading", value)}
+                                />
+                                <TextField
+                                  label="Description"
+                                  value={section.content.description}
+                                  onChange={(value) => updateSectionContent(section.id, "description", value)}
+                                  multiline={3}
+                                />
+                                <TextField
+                                  label="Email placeholder"
+                                  value={section.content.emailPlaceholder}
+                                  onChange={(value) => updateSectionContent(section.id, "emailPlaceholder", value)}
+                                />
+                                <TextField
+                                  label="Primary button"
+                                  value={section.content.primaryButton}
+                                  onChange={(value) => updateSectionContent(section.id, "primaryButton", value)}
+                                />
+                                <TextField
+                                  label="Secondary button"
+                                  value={section.content.secondaryButton}
+                                  onChange={(value) => updateSectionContent(section.id, "secondaryButton", value)}
+                                />
+                              </BlockStack>
+                            )}
+                            
+                            {section.type === "custom" && (
+                              <BlockStack gap="300">
+                                <TextField
+                                  label="Heading"
+                                  value={section.content.heading}
+                                  onChange={(value) => updateSectionContent(section.id, "heading", value)}
+                                />
+                                <TextField
+                                  label="Description"
+                                  value={section.content.description}
+                                  onChange={(value) => updateSectionContent(section.id, "description", value)}
+                                  multiline={4}
+                                />
+                                <TextField
+                                  label="Button text"
+                                  value={section.content.buttonText}
+                                  onChange={(value) => updateSectionContent(section.id, "buttonText", value)}
+                                />
+                              </BlockStack>
+                            )}
+                          </BlockStack>
+                        </Card>
+                      ))}
+                      
+                      <InlineStack gap="200">
+                        <Button size="micro" onClick={() => addSection("intro")}>
+                          Add Introduction
+                        </Button>
+                        <Button size="micro" onClick={() => addSection("email_capture")}>
+                          Add Email Capture
+                        </Button>
+                        <Button size="micro" onClick={() => addSection("custom")}>
+                          Add Custom
+                        </Button>
+                      </InlineStack>
+                    </BlockStack>
+                  )}
+                  
+                  <Divider />
+                  
+                  <InlineStack gap="300">
+                    <Button 
+                      variant="primary" 
+                      onClick={handleSave}
+                      loading={fetcher.state === "submitting"}
+                    >
+                      Save changes
+                    </Button>
+                  </InlineStack>
+                </BlockStack>
+              )}
+
+              {/* Rules Tab */}
+              {selectedTab === 1 && (
                 <BlockStack gap="400">
                   <Text as="h4" variant="headingMd">Discount coupon</Text>
                   <Text as="p" variant="bodyMd">
@@ -496,7 +835,7 @@ export default function PopupEditor() {
               )}
 
               {/* Content Tab */}
-              {selectedTab === 1 && (
+              {selectedTab === 2 && (
                 <BlockStack gap="400">
                   <Text as="h4" variant="headingMd">Start status</Text>
                   
@@ -633,7 +972,7 @@ export default function PopupEditor() {
               )}
 
               {/* Style Tab */}
-              {selectedTab === 2 && (
+              {selectedTab === 3 && (
                 <BlockStack gap="400">
                   <Text as="h4" variant="headingMd">Logo</Text>
                   <Text as="p" variant="bodyMd">
@@ -870,6 +1209,51 @@ export default function PopupEditor() {
         {/* Preview Section */}
         <Layout.Section>
           <Card>
+            {formData.isMultiStep && formData.sections.length > 1 && (
+              <BlockStack gap="300">
+                <InlineStack align="space-between">
+                  <Text as="h3" variant="headingMd">
+                    Step {previewStep + 1} of {formData.sections.length}: {formData.sections[previewStep]?.title}
+                  </Text>
+                  <InlineStack gap="200">
+                    <Button
+                      size="micro"
+                      onClick={prevStep}
+                      disabled={previewStep === 0}
+                    >
+                      ← Previous
+                    </Button>
+                    <Button
+                      size="micro"
+                      onClick={nextStep}
+                      disabled={previewStep === formData.sections.length - 1}
+                    >
+                      Next →
+                    </Button>
+                  </InlineStack>
+                </InlineStack>
+                
+                {/* Step indicator */}
+                <InlineStack gap="100">
+                  {formData.sections.map((_, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => goToStep(index)}
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        border: "none",
+                        backgroundColor: index === previewStep ? "#000" : "#ccc",
+                        cursor: "pointer"
+                      }}
+                    />
+                  ))}
+                </InlineStack>
+                
+                <Divider />
+              </BlockStack>
+            )}
             <Box padding="600">
               <div style={{ 
                 display: "flex", 
@@ -998,14 +1382,14 @@ export default function PopupEditor() {
                         marginBottom: "12px",
                         color: formData.imagePosition === "background" ? "#fff" : formData.textHeading
                       }}>
-                        {formData.heading || "Get 10% OFF your order"}
+                        {currentSection.content.heading || "Get 10% OFF your order"}
                       </h2>
                       <p style={{ 
                         color: formData.imagePosition === "background" ? "#fff" : formData.textDescription, 
                         marginBottom: "0",
                         fontSize: "16px"
                       }}>
-                        {formData.description || "Sign up and unlock your instant discount."}
+                        {currentSection.content.description || "Sign up and unlock your instant discount."}
                       </p>
                     </div>
                   
@@ -1014,19 +1398,21 @@ export default function PopupEditor() {
                       position: "relative",
                       zIndex: formData.imagePosition === "background" ? 5 : "auto"
                     }}>
-                      <input
-                        type="email"
-                        placeholder={formData.emailPlaceholder || "Email address"}
-                        style={{
-                          width: "100%",
-                          padding: "12px",
-                          border: "1px solid #ddd",
-                          borderRadius: "6px",
-                          fontSize: "16px",
-                          marginBottom: "12px",
-                          color: formData.textInput
-                        }}
-                      />
+                      {currentSection.type === "email_capture" && (
+                        <input
+                          type="email"
+                          placeholder={currentSection.content.emailPlaceholder || "Email address"}
+                          style={{
+                            width: "100%",
+                            padding: "12px",
+                            border: "1px solid #ddd",
+                            borderRadius: "6px",
+                            fontSize: "16px",
+                            marginBottom: "12px",
+                            color: formData.textInput
+                          }}
+                        />
+                      )}
                       
                       <button style={{
                         backgroundColor: formData.primaryBtnBg,
@@ -1040,19 +1426,21 @@ export default function PopupEditor() {
                         cursor: "pointer",
                         marginBottom: "12px"
                       }}>
-                        {formData.primaryButton || "Claim discount"}
+                        {currentSection.content.primaryButton || currentSection.content.buttonText || "Claim discount"}
                       </button>
                       
-                      <button style={{
-                        background: "none",
-                        border: "none",
-                        color: formData.imagePosition === "background" ? "#fff" : formData.secondaryBtnText,
-                        fontSize: "14px",
-                        cursor: "pointer",
-                        textDecoration: "underline"
-                      }}>
-                        {formData.secondaryButton || "No, thanks"}
-                      </button>
+                      {currentSection.type === "email_capture" && currentSection.content.secondaryButton && (
+                        <button style={{
+                          background: "none",
+                          border: "none",
+                          color: formData.imagePosition === "background" ? "#fff" : formData.secondaryBtnText,
+                          fontSize: "14px",
+                          cursor: "pointer",
+                          textDecoration: "underline"
+                        }}>
+                          {currentSection.content.secondaryButton}
+                        </button>
+                      )}
                       
                       {/* Custom Buttons */}
                       {formData.customButtons.map((button: any) => (
