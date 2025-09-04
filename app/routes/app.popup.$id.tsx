@@ -506,7 +506,7 @@ export default function PopupEditor() {
   ];
 
   return (
-    <>
+    <Page fullWidth>
       <TitleBar title={`Opt in Popup - ${popup.name}`}>
         <Button variant="secondary" onClick={handleDelete}>
           Delete
@@ -520,17 +520,8 @@ export default function PopupEditor() {
         </Button>
       </TitleBar>
 
-      <div style={{ 
-        display: "flex", 
-        gap: "20px", 
-        width: "100vw", 
-        minHeight: "100vh",
-        padding: "20px",
-        boxSizing: "border-box",
-        margin: 0,
-        backgroundColor: "#f6f6f7"
-      }}>
-        <div style={{ flex: "0 0 35%" }}>
+      <Layout>
+        <Layout.Section variant="oneThird">
           <Card>
             <BlockStack gap="400">
               <Text as="h3" variant="headingMd">Opt in popup</Text>
@@ -1213,10 +1204,10 @@ export default function PopupEditor() {
               )}
             </BlockStack>
           </Card>
-        </div>
+        </Layout.Section>
 
         {/* Preview Section */}
-        <div style={{ flex: "1" }}>
+        <Layout.Section>
           <Card>
             {formData.isMultiStep && formData.sections.length > 1 && (
               <BlockStack gap="300">
@@ -1511,8 +1502,8 @@ export default function PopupEditor() {
               </div>
             </Box>
           </Card>
-        </div>
-      </div>
-    </>
+        </Layout.Section>
+      </Layout>
+    </Page>
   );
 }
