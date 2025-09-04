@@ -2,7 +2,7 @@
 
 client_id = "d56f6a153d77671df608136852e4c2a4"
 name = "pops"
-application_url = "https://alan-freely-programmer-chile.trycloudflare.com"
+application_url = "https://rapids-develops-kids-unity.trycloudflare.com"
 embedded = true
 handle = "pops-2"
 
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "write_products"
 
 [auth]
-redirect_urls = ["https://alan-freely-programmer-chile.trycloudflare.com/auth/callback", "https://alan-freely-programmer-chile.trycloudflare.com/auth/shopify/callback", "https://alan-freely-programmer-chile.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://rapids-develops-kids-unity.trycloudflare.com/auth/callback", "https://rapids-develops-kids-unity.trycloudflare.com/auth/shopify/callback", "https://rapids-develops-kids-unity.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
