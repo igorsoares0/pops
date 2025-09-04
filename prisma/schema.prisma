@@ -54,6 +54,7 @@ model Popup {
   primaryButton     String?
   secondaryButton   String?
   footerText        String?
+  customButtons     String?   // JSON array of custom buttons
   
   // Style
   logoUrl           String?
@@ -78,6 +79,8 @@ model Popup {
   primaryBtnBg      String?   @default("#000000")
   primaryBtnText    String?   @default("#FFFFFF")
   secondaryBtnText  String?   @default("#666666")
+  customBtnBg       String?   @default("#E5E5E5")
+  customBtnText     String?   @default("#000000")
   stickyBarBg       String?   @default("#FFFFFF")
   stickyBarText     String?   @default("#000000")
   sidebarBg         String?   @default("#000000")

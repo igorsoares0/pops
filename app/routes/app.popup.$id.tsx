@@ -21,7 +21,9 @@ import {
   Divider,
   DropZone,
   Thumbnail,
+  Icon,
 } from "@shopify/polaris";
+import { PlusIcon, DeleteIcon } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { db } from "../db.server";
@@ -184,6 +186,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const sidebarText = formData.get("sidebarText") as string;
   if (sidebarText !== null) updateData.sidebarText = sidebarText;
 
+  const customButtons = formData.get("customButtons") as string;
+  if (customButtons !== null) updateData.customButtons = customButtons;
+  
+  const customBtnBg = formData.get("customBtnBg") as string;
+  if (customBtnBg !== null) updateData.customBtnBg = customBtnBg;
+  
+  const customBtnText = formData.get("customBtnText") as string;
+  if (customBtnText !== null) updateData.customBtnText = customBtnText;
+
   try {
     await db.popup.update({
       where: { id, shop: session.shop },
@@ -250,6 +261,11 @@ export default function PopupEditor() {
     stickyBarText: popup.stickyBarText || "#000000",
     sidebarBg: popup.sidebarBg || "#000000",
     sidebarText: popup.sidebarText || "#FFFFFF",
+    
+    // Custom Buttons
+    customButtons: popup.customButtons ? JSON.parse(popup.customButtons) : [],
+    customBtnBg: popup.customBtnBg || "#E5E5E5",
+    customBtnText: popup.customBtnText || "#000000",
   });
 
   useEffect(() => {
@@ -263,7 +279,11 @@ export default function PopupEditor() {
   const handleSave = () => {
     const form = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      form.append(key, value.toString());
+      if (key === "customButtons") {
+        form.append(key, JSON.stringify(value));
+      } else {
+        form.append(key, value.toString());
+      }
     });
     fetcher.submit(form, { method: "POST" });
   };
@@ -304,6 +324,29 @@ export default function PopupEditor() {
   const removeImage = () => {
     setImageFiles([]);
     updateFormData("imageUrl", "");
+  };
+
+  const addCustomButton = () => {
+    const newButton = {
+      id: Date.now(),
+      text: "New Button",
+      action: "link",
+      url: "",
+      style: "outline"
+    };
+    updateFormData("customButtons", [...formData.customButtons, newButton]);
+  };
+
+  const updateCustomButton = (id: number, field: string, value: string) => {
+    const updatedButtons = formData.customButtons.map((btn: any) =>
+      btn.id === id ? { ...btn, [field]: value } : btn
+    );
+    updateFormData("customButtons", updatedButtons);
+  };
+
+  const removeCustomButton = (id: number) => {
+    const filteredButtons = formData.customButtons.filter((btn: any) => btn.id !== id);
+    updateFormData("customButtons", filteredButtons);
   };
 
   const tabs = [
@@ -502,6 +545,69 @@ export default function PopupEditor() {
                     value={formData.secondaryButton}
                     onChange={(value) => updateFormData("secondaryButton", value)}
                   />
+                  
+                  <Text as="h5" variant="headingSm">CUSTOM BUTTONS</Text>
+                  
+                  {formData.customButtons.map((button: any) => (
+                    <Card key={button.id}>
+                      <BlockStack gap="300">
+                        <InlineStack gap="300" align="space-between">
+                          <Text as="h6" variant="headingSm">Custom Button</Text>
+                          <Button 
+                            size="micro" 
+                            variant="plain" 
+                            onClick={() => removeCustomButton(button.id)}
+                            icon={DeleteIcon}
+                          />
+                        </InlineStack>
+                        
+                        <TextField
+                          label="Button text"
+                          value={button.text}
+                          onChange={(value) => updateCustomButton(button.id, "text", value)}
+                          placeholder="Button text"
+                        />
+                        
+                        <Select
+                          label="Action type"
+                          options={[
+                            { label: "Link to URL", value: "link" },
+                            { label: "Close popup", value: "close" },
+                            { label: "Custom action", value: "custom" },
+                          ]}
+                          value={button.action}
+                          onChange={(value) => updateCustomButton(button.id, "action", value)}
+                        />
+                        
+                        {button.action === "link" && (
+                          <TextField
+                            label="URL"
+                            value={button.url}
+                            onChange={(value) => updateCustomButton(button.id, "url", value)}
+                            placeholder="https://example.com"
+                          />
+                        )}
+                        
+                        <Select
+                          label="Button style"
+                          options={[
+                            { label: "Outline", value: "outline" },
+                            { label: "Plain", value: "plain" },
+                          ]}
+                          value={button.style}
+                          onChange={(value) => updateCustomButton(button.id, "style", value)}
+                        />
+                      </BlockStack>
+                    </Card>
+                  ))}
+                  
+                  <Button 
+                    size="micro" 
+                    onClick={addCustomButton}
+                    icon={PlusIcon}
+                  >
+                    Add custom button
+                  </Button>
                   
                   <Text as="h5" variant="headingSm">FOOTER</Text>
                   
@@ -706,6 +812,18 @@ export default function PopupEditor() {
                     label="Text"
                     value={formData.secondaryBtnText}
                     onChange={(value) => updateFormData("secondaryBtnText", value)}
+                  />
+                  
+                  <Text as="h5" variant="headingSm">CUSTOM BUTTONS</Text>
+                  <ColorPickerField
+                    label="Background"
+                    value={formData.customBtnBg}
+                    onChange={(value) => updateFormData("customBtnBg", value)}
+                  />
+                  <ColorPickerField
+                    label="Text"
+                    value={formData.customBtnText}
+                    onChange={(value) => updateFormData("customBtnText", value)}
                   />
                   
                   <Text as="h5" variant="headingSm">Sticky discount bar</Text>
@@ -935,6 +1053,29 @@ export default function PopupEditor() {
                       }}>
                         {formData.secondaryButton || "No, thanks"}
                       </button>
+                      
+                      {/* Custom Buttons */}
+                      {formData.customButtons.map((button: any) => (
+                        <button 
+                          key={button.id}
+                          style={{
+                            backgroundColor: button.style === "outline" ? "transparent" : formData.customBtnBg,
+                            color: button.style === "outline" ? formData.customBtnBg : formData.customBtnText,
+                            border: button.style === "outline" ? `1px solid ${formData.customBtnBg}` : "none",
+                            padding: "8px 16px",
+                            borderRadius: "6px",
+                            width: "100%",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            marginTop: "8px",
+                            textDecoration: button.style === "plain" ? "underline" : "none",
+                            background: button.style === "plain" ? "none" : undefined
+                          }}
+                        >
+                          {button.text}
+                        </button>
+                      ))}
                     </div>
                     
                     <p style={{

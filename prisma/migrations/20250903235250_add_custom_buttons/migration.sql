@@ -1,0 +1,60 @@
+-- RedefineTables
+PRAGMA defer_foreign_keys=ON;
+PRAGMA foreign_keys=OFF;
+CREATE TABLE "new_Popup" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "discountType" TEXT,
+    "discountValue" REAL,
+    "discountCode" TEXT,
+    "autoGenerateCode" BOOLEAN NOT NULL DEFAULT false,
+    "hasExpiration" BOOLEAN NOT NULL DEFAULT false,
+    "enterShopifyCode" BOOLEAN NOT NULL DEFAULT false,
+    "showStickyBar" BOOLEAN NOT NULL DEFAULT false,
+    "sidebarWidget" BOOLEAN NOT NULL DEFAULT false,
+    "heading" TEXT,
+    "description" TEXT,
+    "emailPlaceholder" TEXT,
+    "primaryButton" TEXT,
+    "secondaryButton" TEXT,
+    "footerText" TEXT,
+    "customButtons" TEXT,
+    "logoUrl" TEXT,
+    "logoWidth" INTEGER DEFAULT 35,
+    "displaySize" TEXT DEFAULT 'standard',
+    "alignment" TEXT DEFAULT 'center',
+    "cornerRadius" TEXT DEFAULT 'standard',
+    "imagePosition" TEXT DEFAULT 'none',
+    "hideOnMobile" BOOLEAN NOT NULL DEFAULT false,
+    "backgroundOnMobile" BOOLEAN NOT NULL DEFAULT false,
+    "imageUrl" TEXT,
+    "popupBackground" TEXT DEFAULT '#FFFFFF',
+    "textHeading" TEXT DEFAULT '#000000',
+    "textDescription" TEXT DEFAULT '#666666',
+    "textInput" TEXT DEFAULT '#000000',
+    "textConsent" TEXT DEFAULT '#666666',
+    "textError" TEXT DEFAULT '#FF0000',
+    "textLabel" TEXT DEFAULT '#000000',
+    "textFooter" TEXT DEFAULT '#999999',
+    "primaryBtnBg" TEXT DEFAULT '#000000',
+    "primaryBtnText" TEXT DEFAULT '#FFFFFF',
+    "secondaryBtnText" TEXT DEFAULT '#666666',
+    "customBtnBg" TEXT DEFAULT '#E5E5E5',
+    "customBtnText" TEXT DEFAULT '#000000',
+    "stickyBarBg" TEXT DEFAULT '#FFFFFF',
+    "stickyBarText" TEXT DEFAULT '#000000',
+    "sidebarBg" TEXT DEFAULT '#000000',
+    "sidebarText" TEXT DEFAULT '#FFFFFF',
+    "views" INTEGER NOT NULL DEFAULT 0,
+    "subscribers" INTEGER NOT NULL DEFAULT 0,
+    "conversionRate" REAL NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+INSERT INTO "new_Popup" ("alignment", "autoGenerateCode", "backgroundOnMobile", "conversionRate", "cornerRadius", "createdAt", "description", "discountCode", "discountType", "discountValue", "displaySize", "emailPlaceholder", "enterShopifyCode", "footerText", "hasExpiration", "heading", "hideOnMobile", "id", "imagePosition", "imageUrl", "isActive", "logoUrl", "logoWidth", "name", "primaryButton", "secondaryButton", "shop", "showStickyBar", "sidebarWidget", "subscribers", "updatedAt", "views") SELECT "alignment", "autoGenerateCode", "backgroundOnMobile", "conversionRate", "cornerRadius", "createdAt", "description", "discountCode", "discountType", "discountValue", "displaySize", "emailPlaceholder", "enterShopifyCode", "footerText", "hasExpiration", "heading", "hideOnMobile", "id", "imagePosition", "imageUrl", "isActive", "logoUrl", "logoWidth", "name", "primaryButton", "secondaryButton", "shop", "showStickyBar", "sidebarWidget", "subscribers", "updatedAt", "views" FROM "Popup";
+DROP TABLE "Popup";
+ALTER TABLE "new_Popup" RENAME TO "Popup";
+PRAGMA foreign_keys=ON;
+PRAGMA defer_foreign_keys=OFF;
