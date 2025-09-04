@@ -119,10 +119,16 @@ export function ColorPickerField({ label, value, onChange }: ColorPickerFieldPro
   );
 
   return (
-    <BlockStack gap="200">
-      <Text as="p" variant="bodyMd">
-        {label}
-      </Text>
+    <InlineStack gap="300" align="start">
+      <div style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        minWidth: "120px" 
+      }}>
+        <Text as="p" variant="bodyMd">
+          {label}
+        </Text>
+      </div>
       
       <InlineStack gap="300" align="center">
         <Popover
@@ -163,6 +169,6 @@ export function ColorPickerField({ label, value, onChange }: ColorPickerFieldPro
           />
         </div>
       </InlineStack>
-    </BlockStack>
+    </InlineStack>
   );
 }
