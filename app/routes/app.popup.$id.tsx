@@ -520,8 +520,14 @@ export default function PopupEditor() {
         </Button>
       </TitleBar>
 
-      <Layout>
-        <Layout.Section variant="oneThird">
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 2fr",
+        gap: "20px",
+        minHeight: "100vh",
+        padding: "0 20px"
+      }}>
+        <div>
           <Card>
             <BlockStack gap="400">
               <Text as="h3" variant="headingMd">Opt in popup</Text>
@@ -1204,11 +1210,16 @@ export default function PopupEditor() {
               )}
             </BlockStack>
           </Card>
-        </Layout.Section>
+        </div>
 
         {/* Preview Section */}
-        <Layout.Section>
-          <Card>
+        <div style={{
+          position: "sticky",
+          top: "20px",
+          height: "calc(100vh - 80px)",
+          alignSelf: "start"
+        }}>
+          <Card style={{ height: "100%", overflow: "hidden" }}>
             {formData.isMultiStep && formData.sections.length > 1 && (
               <BlockStack gap="300">
                 <InlineStack align="space-between">
@@ -1502,8 +1513,8 @@ export default function PopupEditor() {
               </div>
             </Box>
           </Card>
-        </Layout.Section>
-      </Layout>
+        </div>
+      </div>
     </Page>
   );
 }
