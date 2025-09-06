@@ -101,22 +101,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const sidebarWidget = formData.get("sidebarWidget");
   if (sidebarWidget !== null) updateData.sidebarWidget = sidebarWidget === "true";
 
-  // Content tab
-  const heading = formData.get("heading") as string;
-  if (heading !== null) updateData.heading = heading;
-  
-  const description = formData.get("description") as string;
-  if (description !== null) updateData.description = description;
-  
-  const emailPlaceholder = formData.get("emailPlaceholder") as string;
-  if (emailPlaceholder !== null) updateData.emailPlaceholder = emailPlaceholder;
-  
-  const primaryButton = formData.get("primaryButton") as string;
-  if (primaryButton !== null) updateData.primaryButton = primaryButton;
-  
-  const secondaryButton = formData.get("secondaryButton") as string;
-  if (secondaryButton !== null) updateData.secondaryButton = secondaryButton;
-  
+  // Footer text (now global setting)
   const footerText = formData.get("footerText") as string;
   if (footerText !== null) updateData.footerText = footerText;
 
@@ -252,12 +237,7 @@ export default function PopupEditor() {
     showStickyBar: popup.showStickyBar,
     sidebarWidget: popup.sidebarWidget,
     
-    // Content
-    heading: popup.heading || "",
-    description: popup.description || "",
-    emailPlaceholder: popup.emailPlaceholder || "",
-    primaryButton: popup.primaryButton || "",
-    secondaryButton: popup.secondaryButton || "",
+    // Global content
     footerText: popup.footerText || "",
     
     // Style
@@ -423,6 +403,11 @@ export default function PopupEditor() {
   };
 
   const removeSection = (id: number) => {
+    // Don't allow removing the last section
+    if (formData.sections.length <= 1) {
+      return;
+    }
+    
     const filteredSections = formData.sections.filter((section: any) => section.id !== id);
     // Reorder sections
     const reorderedSections = filteredSections.map((section: any, index: number) => ({
@@ -482,15 +467,20 @@ export default function PopupEditor() {
   // Get current section for preview
   const getCurrentSection = () => {
     if (!formData.isMultiStep || formData.sections.length === 0) {
-      // Return default single-step content
+      // For single-step popups, always use the first section if available,
+      // otherwise return default content
+      if (formData.sections.length > 0) {
+        return formData.sections[0];
+      }
+      // Fallback to default content
       return {
         type: "email_capture",
         content: {
-          heading: formData.heading || "Get 10% OFF your order",
-          description: formData.description || "Sign up and unlock your instant discount.",
-          emailPlaceholder: formData.emailPlaceholder || "Email address",
-          primaryButton: formData.primaryButton || "Claim discount",
-          secondaryButton: formData.secondaryButton || "No, thanks"
+          heading: "Get 10% OFF your order",
+          description: "Sign up and unlock your instant discount.",
+          emailPlaceholder: "Email address",
+          primaryButton: "Claim discount",
+          secondaryButton: "No, thanks"
         }
       };
     }
@@ -502,7 +492,6 @@ export default function PopupEditor() {
   const tabs = [
     { id: "steps", content: "Steps" },
     { id: "rules", content: "Rules" },
-    { id: "content", content: "Content" },
     { id: "style", content: "Style" },
   ];
 
@@ -554,10 +543,10 @@ export default function PopupEditor() {
                     helpText="When enabled, users will navigate through multiple sections before reaching the final action."
                   />
                   
-                  {formData.isMultiStep && (
-                    <BlockStack gap="400">
-                      <InlineStack align="space-between">
-                        <Text as="h5" variant="headingSm">SECTIONS ({formData.sections.length})</Text>
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between">
+                      <Text as="h5" variant="headingSm">SECTIONS ({formData.sections.length})</Text>
+                      {formData.isMultiStep && (
                         <Button 
                           size="micro" 
                           onClick={() => addSection("intro")}
@@ -565,7 +554,8 @@ export default function PopupEditor() {
                         >
                           Add Section
                         </Button>
-                      </InlineStack>
+                      )}
+                    </InlineStack>
                       
                       {formData.sections.map((section: any, index: number) => (
                         <Card key={section.id}>
@@ -579,57 +569,65 @@ export default function PopupEditor() {
                                 </Badge>
                               </InlineStack>
                               
-                              <InlineStack gap="200">
-                                <Button
-                                  size="micro"
-                                  variant="plain"
-                                  onClick={() => moveSection(section.id, "up")}
-                                  disabled={index === 0}
-                                >
-                                  ↑
-                                </Button>
-                                <Button
-                                  size="micro"
-                                  variant="plain"
-                                  onClick={() => moveSection(section.id, "down")}
-                                  disabled={index === formData.sections.length - 1}
-                                >
-                                  ↓
-                                </Button>
-                                <Button 
-                                  size="micro" 
-                                  variant="plain" 
-                                  onClick={() => removeSection(section.id)}
-                                  icon={DeleteIcon}
-                                  disabled={formData.sections.length === 1}
-                                />
-                              </InlineStack>
+                              {formData.isMultiStep && (
+                                <InlineStack gap="200">
+                                  <Button
+                                    size="micro"
+                                    variant="plain"
+                                    onClick={() => moveSection(section.id, "up")}
+                                    disabled={index === 0}
+                                  >
+                                    ↑
+                                  </Button>
+                                  <Button
+                                    size="micro"
+                                    variant="plain"
+                                    onClick={() => moveSection(section.id, "down")}
+                                    disabled={index === formData.sections.length - 1}
+                                  >
+                                    ↓
+                                  </Button>
+                                  <Button 
+                                    size="micro" 
+                                    variant="plain" 
+                                    onClick={() => removeSection(section.id)}
+                                    icon={DeleteIcon}
+                                    disabled={formData.sections.length === 1}
+                                  />
+                                </InlineStack>
+                              )}
                             </InlineStack>
                             
-                            <Select
-                              label="Section type"
-                              options={[
-                                { label: "Introduction", value: "intro" },
-                                { label: "Email Capture", value: "email_capture" },
-                                { label: "Custom", value: "custom" },
-                              ]}
-                              value={section.type}
-                              onChange={(value) => updateSection(section.id, "type", value)}
-                            />
+                            {formData.isMultiStep && (
+                              <Select
+                                label="Section type"
+                                options={[
+                                  { label: "Introduction", value: "intro" },
+                                  { label: "Email Capture", value: "email_capture" },
+                                  { label: "Custom", value: "custom" },
+                                ]}
+                                value={section.type}
+                                onChange={(value) => updateSection(section.id, "type", value)}
+                              />
+                            )}
                             
-                            <TextField
-                              label="Section title"
-                              value={section.title}
-                              onChange={(value) => updateSection(section.id, "title", value)}
-                              placeholder="Enter section title"
-                            />
+                            {formData.isMultiStep && (
+                              <TextField
+                                label="Section title"
+                                value={section.title}
+                                onChange={(value) => updateSection(section.id, "title", value)}
+                                placeholder="Enter section title"
+                              />
+                            )}
                             
                             {section.type === "intro" && (
                               <BlockStack gap="300">
+                                <Text as="h6" variant="headingSm">CONTENT</Text>
                                 <TextField
                                   label="Heading"
                                   value={section.content.heading}
                                   onChange={(value) => updateSectionContent(section.id, "heading", value)}
+                                  maxLength={50}
                                 />
                                 <TextField
                                   label="Description"
@@ -637,6 +635,8 @@ export default function PopupEditor() {
                                   onChange={(value) => updateSectionContent(section.id, "description", value)}
                                   multiline={3}
                                 />
+                                
+                                <Text as="h6" variant="headingSm">ACTIONS</Text>
                                 <TextField
                                   label="Button text"
                                   value={section.content.buttonText}
@@ -647,10 +647,12 @@ export default function PopupEditor() {
                             
                             {section.type === "email_capture" && (
                               <BlockStack gap="300">
+                                <Text as="h6" variant="headingSm">CONTENT</Text>
                                 <TextField
                                   label="Heading"
                                   value={section.content.heading}
                                   onChange={(value) => updateSectionContent(section.id, "heading", value)}
+                                  maxLength={50}
                                 />
                                 <TextField
                                   label="Description"
@@ -658,11 +660,15 @@ export default function PopupEditor() {
                                   onChange={(value) => updateSectionContent(section.id, "description", value)}
                                   multiline={3}
                                 />
+                                
+                                <Text as="h6" variant="headingSm">FORM</Text>
                                 <TextField
                                   label="Email placeholder"
                                   value={section.content.emailPlaceholder}
                                   onChange={(value) => updateSectionContent(section.id, "emailPlaceholder", value)}
                                 />
+                                
+                                <Text as="h6" variant="headingSm">ACTIONS</Text>
                                 <TextField
                                   label="Primary button"
                                   value={section.content.primaryButton}
@@ -678,10 +684,12 @@ export default function PopupEditor() {
                             
                             {section.type === "custom" && (
                               <BlockStack gap="300">
+                                <Text as="h6" variant="headingSm">CONTENT</Text>
                                 <TextField
                                   label="Heading"
                                   value={section.content.heading}
                                   onChange={(value) => updateSectionContent(section.id, "heading", value)}
+                                  maxLength={50}
                                 />
                                 <TextField
                                   label="Description"
@@ -689,6 +697,8 @@ export default function PopupEditor() {
                                   onChange={(value) => updateSectionContent(section.id, "description", value)}
                                   multiline={4}
                                 />
+                                
+                                <Text as="h6" variant="headingSm">ACTIONS</Text>
                                 <TextField
                                   label="Button text"
                                   value={section.content.buttonText}
@@ -700,19 +710,99 @@ export default function PopupEditor() {
                         </Card>
                       ))}
                       
-                      <InlineStack gap="200">
-                        <Button size="micro" onClick={() => addSection("intro")}>
-                          Add Introduction
-                        </Button>
-                        <Button size="micro" onClick={() => addSection("email_capture")}>
-                          Add Email Capture
-                        </Button>
-                        <Button size="micro" onClick={() => addSection("custom")}>
-                          Add Custom
-                        </Button>
-                      </InlineStack>
+                      {formData.isMultiStep && (
+                        <InlineStack gap="200">
+                          <Button size="micro" onClick={() => addSection("intro")}>
+                            Add Introduction
+                          </Button>
+                          <Button size="micro" onClick={() => addSection("email_capture")}>
+                            Add Email Capture
+                          </Button>
+                          <Button size="micro" onClick={() => addSection("custom")}>
+                            Add Custom
+                          </Button>
+                        </InlineStack>
+                      )}
                     </BlockStack>
-                  )}
+                  
+                  <Divider />
+                  
+                  <Text as="h4" variant="headingMd">Global Settings</Text>
+                  
+                  <Text as="h5" variant="headingSm">CUSTOM BUTTONS</Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    These buttons will appear on all sections (only on the last step for multi-step popups).
+                  </Text>
+                  
+                  {formData.customButtons.map((button: any) => (
+                    <Card key={button.id}>
+                      <BlockStack gap="300">
+                        <InlineStack gap="300" align="space-between">
+                          <Text as="h6" variant="headingSm">Custom Button</Text>
+                          <Button 
+                            size="micro" 
+                            variant="plain" 
+                            onClick={() => removeCustomButton(button.id)}
+                            icon={DeleteIcon}
+                          />
+                        </InlineStack>
+                        
+                        <TextField
+                          label="Button text"
+                          value={button.text}
+                          onChange={(value) => updateCustomButton(button.id, "text", value)}
+                          placeholder="Button text"
+                        />
+                        
+                        <Select
+                          label="Action type"
+                          options={[
+                            { label: "Link to URL", value: "link" },
+                            { label: "Close popup", value: "close" },
+                            { label: "Custom action", value: "custom" },
+                          ]}
+                          value={button.action}
+                          onChange={(value) => updateCustomButton(button.id, "action", value)}
+                        />
+                        
+                        {button.action === "link" && (
+                          <TextField
+                            label="URL"
+                            value={button.url}
+                            onChange={(value) => updateCustomButton(button.id, "url", value)}
+                            placeholder="https://example.com"
+                          />
+                        )}
+                        
+                        <Select
+                          label="Button style"
+                          options={[
+                            { label: "Outline", value: "outline" },
+                            { label: "Plain", value: "plain" },
+                          ]}
+                          value={button.style}
+                          onChange={(value) => updateCustomButton(button.id, "style", value)}
+                        />
+                      </BlockStack>
+                    </Card>
+                  ))}
+                  
+                  <Button 
+                    size="micro" 
+                    onClick={addCustomButton}
+                    icon={PlusIcon}
+                  >
+                    Add custom button
+                  </Button>
+                  
+                  <Text as="h5" variant="headingSm">FOOTER</Text>
+                  <TextField
+                    label="Footer text"
+                    value={formData.footerText}
+                    onChange={(value) => updateFormData("footerText", value)}
+                    multiline={3}
+                    helpText="This text appears at the bottom of email capture sections."
+                  />
                   
                   <Divider />
                   
@@ -841,145 +931,8 @@ export default function PopupEditor() {
                 </BlockStack>
               )}
 
-              {/* Content Tab */}
-              {selectedTab === 2 && (
-                <BlockStack gap="400">
-                  <Text as="h4" variant="headingMd">Start status</Text>
-                  
-                  <Text as="h5" variant="headingSm">POPUP CONTENT</Text>
-                  
-                  <TextField
-                    label="Heading"
-                    value={formData.heading}
-                    onChange={(value) => updateFormData("heading", value)}
-                    maxLength={50}
-                  />
-                  
-                  <TextField
-                    label="Description"
-                    value={formData.description}
-                    onChange={(value) => updateFormData("description", value)}
-                    multiline={4}
-                  />
-                  
-                  <Text as="h5" variant="headingSm">FORM</Text>
-                  
-                  <TextField
-                    label="Name"
-                    value="Name"
-                    disabled
-                  />
-                  
-                  <TextField
-                    label="Email address"
-                    value={formData.emailPlaceholder}
-                    onChange={(value) => updateFormData("emailPlaceholder", value)}
-                  />
-                  
-                  <Button size="micro">Add form field</Button>
-                  
-                  <Text as="h5" variant="headingSm">ACTIONS</Text>
-                  
-                  <TextField
-                    label="Primary button"
-                    value={formData.primaryButton}
-                    onChange={(value) => updateFormData("primaryButton", value)}
-                  />
-                  
-                  <TextField
-                    label="Secondary button"
-                    value={formData.secondaryButton}
-                    onChange={(value) => updateFormData("secondaryButton", value)}
-                  />
-                  
-                  <Text as="h5" variant="headingSm">CUSTOM BUTTONS</Text>
-                  
-                  {formData.customButtons.map((button: any) => (
-                    <Card key={button.id}>
-                      <BlockStack gap="300">
-                        <InlineStack gap="300" align="space-between">
-                          <Text as="h6" variant="headingSm">Custom Button</Text>
-                          <Button 
-                            size="micro" 
-                            variant="plain" 
-                            onClick={() => removeCustomButton(button.id)}
-                            icon={DeleteIcon}
-                          />
-                        </InlineStack>
-                        
-                        <TextField
-                          label="Button text"
-                          value={button.text}
-                          onChange={(value) => updateCustomButton(button.id, "text", value)}
-                          placeholder="Button text"
-                        />
-                        
-                        <Select
-                          label="Action type"
-                          options={[
-                            { label: "Link to URL", value: "link" },
-                            { label: "Close popup", value: "close" },
-                            { label: "Custom action", value: "custom" },
-                          ]}
-                          value={button.action}
-                          onChange={(value) => updateCustomButton(button.id, "action", value)}
-                        />
-                        
-                        {button.action === "link" && (
-                          <TextField
-                            label="URL"
-                            value={button.url}
-                            onChange={(value) => updateCustomButton(button.id, "url", value)}
-                            placeholder="https://example.com"
-                          />
-                        )}
-                        
-                        <Select
-                          label="Button style"
-                          options={[
-                            { label: "Outline", value: "outline" },
-                            { label: "Plain", value: "plain" },
-                          ]}
-                          value={button.style}
-                          onChange={(value) => updateCustomButton(button.id, "style", value)}
-                        />
-                      </BlockStack>
-                    </Card>
-                  ))}
-                  
-                  <Button 
-                    size="micro" 
-                    onClick={addCustomButton}
-                    icon={PlusIcon}
-                  >
-                    Add custom button
-                  </Button>
-                  
-                  <Text as="h5" variant="headingSm">FOOTER</Text>
-                  
-                  <TextField
-                    label="Footer text"
-                    value={formData.footerText}
-                    onChange={(value) => updateFormData("footerText", value)}
-                    multiline={3}
-                  />
-                  
-                  <Divider />
-                  
-                  <InlineStack gap="300">
-                    <Button 
-                      variant="primary" 
-                      onClick={handleSave}
-                      loading={fetcher.state === "submitting"}
-                    >
-                      Save changes
-                    </Button>
-                  </InlineStack>
-                </BlockStack>
-              )}
-
               {/* Style Tab */}
-              {selectedTab === 3 && (
+              {selectedTab === 2 && (
                 <BlockStack gap="400">
                   <Text as="h4" variant="headingMd">Logo</Text>
                   <Text as="p" variant="bodyMd">

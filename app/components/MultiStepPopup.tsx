@@ -34,7 +34,10 @@ interface PopupData {
   cornerRadius: string;
   alignment: string;
   footerText?: string;
+  textFooter?: string;
   customButtons: any[];
+  customBtnBg: string;
+  customBtnText: string;
   // Discount data
   discountType: string;
   discountValue: number;
