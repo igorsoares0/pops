@@ -39,7 +39,7 @@ model Popup {
   
   // Multi-step functionality
   isMultiStep       Boolean   @default(false)
-  sections          String?   // JSON array of sections
+  sections          String?   // JSON array of sections with individual design settings
   
   // Rules
   discountType      String?   // "percentage" | "fixed" | "none"
@@ -51,7 +51,7 @@ model Popup {
   showStickyBar     Boolean   @default(false)
   sidebarWidget     Boolean   @default(false)
   
-  // Content
+  // Global content (fallback/default values)
   heading           String?
   description       String?
   emailPlaceholder  String?
@@ -60,7 +60,7 @@ model Popup {
   footerText        String?
   customButtons     String?   // JSON array of custom buttons
   
-  // Style
+  // Global style settings (fallback/default values)
   logoUrl           String?
   logoWidth         Int?      @default(35)
   displaySize       String?   @default("standard")
@@ -71,7 +71,7 @@ model Popup {
   backgroundOnMobile Boolean  @default(false)
   imageUrl          String?
   
-  // Colors
+  // Global colors (fallback/default values)
   popupBackground   String?   @default("#FFFFFF")
   textHeading       String?   @default("#000000")
   textDescription   String?   @default("#666666")

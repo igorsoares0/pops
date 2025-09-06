@@ -208,6 +208,7 @@ export default function PopupEditor() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [previewStep, setPreviewStep] = useState(0);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [selectedSectionForDesign, setSelectedSectionForDesign] = useState<number | null>(null);
   const [logoFiles, setLogoFiles] = useState<File[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState({
@@ -236,6 +237,31 @@ export default function PopupEditor() {
         customButtons: [],
         footerText: popup.footerText || "You are signing up to receive communication via email and can unsubscribe at any time.",
         imageUrl: ""
+      },
+      design: {
+        // Individual section design settings
+        logoUrl: "",
+        logoWidth: 35,
+        displaySize: "standard",
+        alignment: "center",
+        cornerRadius: "standard",
+        imagePosition: "none",
+        hideOnMobile: false,
+        backgroundOnMobile: false,
+        imageUrl: "",
+        popupBackground: "#FFFFFF",
+        textHeading: "#000000",
+        textDescription: "#666666",
+        textInput: "#000000",
+        textConsent: "#666666",
+        textError: "#FF0000",
+        textLabel: "#000000",
+        textFooter: "#999999",
+        primaryBtnBg: "#000000",
+        primaryBtnText: "#FFFFFF",
+        secondaryBtnText: "#666666",
+        customBtnBg: "#E5E5E5",
+        customBtnText: "#000000"
       }
     }],
     
@@ -316,12 +342,29 @@ export default function PopupEditor() {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
+  // Updated design handler to work with section-specific design
+  const updateDesignField = (field: string, value: any) => {
+    if (selectedSectionForDesign) {
+      updateSectionDesign(selectedSectionForDesign, field, value);
+    } else {
+      updateFormData(field, value);
+    }
+  };
+
+  const getDesignFieldValue = (field: string) => {
+    if (selectedSectionForDesign) {
+      const section = formData.sections.find((s: any) => s.id === selectedSectionForDesign);
+      return section?.design?.[field] ?? formData[field];
+    }
+    return formData[field];
+  };
+
   const handleLogoUpload = (files: File[]) => {
     setLogoFiles(files);
     if (files.length > 0) {
       const file = files[0];
       const url = URL.createObjectURL(file);
-      updateFormData("logoUrl", url);
+      updateDesignField("logoUrl", url);
     }
   };
 
@@ -330,18 +373,18 @@ export default function PopupEditor() {
     if (files.length > 0) {
       const file = files[0];
       const url = URL.createObjectURL(file);
-      updateFormData("imageUrl", url);
+      updateDesignField("imageUrl", url);
     }
   };
 
   const removeLogo = () => {
     setLogoFiles([]);
-    updateFormData("logoUrl", "");
+    updateDesignField("logoUrl", "");
   };
 
   const removeImage = () => {
     setImageFiles([]);
-    updateFormData("imageUrl", "");
+    updateDesignField("imageUrl", "");
   };
 
   const addCustomButton = () => {
@@ -449,6 +492,31 @@ export default function PopupEditor() {
         customButtons: [],
         footerText: "",
         imageUrl: ""
+      },
+      design: {
+        // Individual section design settings
+        logoUrl: "",
+        logoWidth: 35,
+        displaySize: "standard",
+        alignment: "center",
+        cornerRadius: "standard",
+        imagePosition: "none",
+        hideOnMobile: false,
+        backgroundOnMobile: false,
+        imageUrl: "",
+        popupBackground: "#FFFFFF",
+        textHeading: "#000000",
+        textDescription: "#666666",
+        textInput: "#000000",
+        textConsent: "#666666",
+        textError: "#FF0000",
+        textLabel: "#000000",
+        textFooter: "#999999",
+        primaryBtnBg: "#000000",
+        primaryBtnText: "#FFFFFF",
+        secondaryBtnText: "#666666",
+        customBtnBg: "#E5E5E5",
+        customBtnText: "#000000"
       }
     };
     updateFormData("sections", [...formData.sections, newSection]);
@@ -457,6 +525,15 @@ export default function PopupEditor() {
   const updateSection = (id: number, field: string, value: any) => {
     const updatedSections = formData.sections.map((section: any) =>
       section.id === id ? { ...section, [field]: value } : section
+    );
+    updateFormData("sections", updatedSections);
+  };
+
+  const updateSectionDesign = (id: number, designField: string, value: any) => {
+    const updatedSections = formData.sections.map((section: any) =>
+      section.id === id 
+        ? { ...section, design: { ...section.design, [designField]: value } }
+        : section
     );
     updateFormData("sections", updatedSections);
   };
@@ -555,12 +632,23 @@ export default function PopupEditor() {
     return formData.sections[previewStep] || formData.sections[0];
   };
 
+  // Helper function to get effective design settings for a section (with fallbacks to global settings)
+  const getEffectiveDesign = (section: any) => {
+    if (!section?.design) return formData; // Use global settings as fallback
+    
+    return {
+      ...formData, // Global defaults
+      ...section.design // Override with section-specific settings
+    };
+  };
+
   const currentSection = getCurrentSection();
+  const currentSectionDesign = getEffectiveDesign(currentSection);
 
   const tabs = [
     { id: "steps", content: "Steps" },
     { id: "rules", content: "Rules" },
-    { id: "style", content: "Style" },
+    { id: "design", content: "Design" },
   ];
 
   return (
@@ -940,34 +1028,97 @@ export default function PopupEditor() {
                 </BlockStack>
               )}
 
-              {/* Style Tab */}
+              {/* Design Tab */}
               {selectedTab === 2 && (
                 <BlockStack gap="400">
+                  <Text as="h4" variant="headingMd">Design Settings</Text>
+                  <Text as="p" variant="bodyMd">
+                    Customize the design for each section individually, or use global settings.
+                  </Text>
+                  
+                  {/* Section Selection */}
+                  <Card>
+                    <BlockStack gap="300">
+                      <InlineStack align="space-between">
+                        <Text as="h5" variant="headingSm">Choose section to design</Text>
+                        {selectedSectionForDesign && (
+                          <Button 
+                            size="micro" 
+                            variant="secondary"
+                            onClick={() => setSelectedSectionForDesign(null)}
+                          >
+                            Use Global Settings
+                          </Button>
+                        )}
+                      </InlineStack>
+                      
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {formData.sections.map((section: any, index: number) => (
+                          <Button
+                            key={section.id}
+                            size="micro"
+                            variant={selectedSectionForDesign === section.id ? "primary" : "secondary"}
+                            onClick={() => setSelectedSectionForDesign(section.id)}
+                          >
+                            {section.title || `Section ${index + 1}`}
+                          </Button>
+                        ))}
+                      </div>
+                      
+                      {selectedSectionForDesign && (
+                        <Banner tone="info">
+                          <Text as="p" variant="bodyMd">
+                            You are now editing the design for: <strong>{
+                              formData.sections.find((s: any) => s.id === selectedSectionForDesign)?.title || 
+                              `Section ${formData.sections.findIndex((s: any) => s.id === selectedSectionForDesign) + 1}`
+                            }</strong>
+                          </Text>
+                        </Banner>
+                      )}
+                      
+                      {!selectedSectionForDesign && (
+                        <Banner tone="warning">
+                          <Text as="p" variant="bodyMd">
+                            Global design mode: Changes will apply to all sections that don't have individual design settings.
+                          </Text>
+                        </Banner>
+                      )}
+                    </BlockStack>
+                  </Card>
+                  
+                  <Divider />
+                  
                   <Text as="h4" variant="headingMd">Logo</Text>
                   <Text as="p" variant="bodyMd">
                     Less than 2MB. Accepts .jpg, .png, .gif, .jpeg recommended: 620 x 400 pixels.
                   </Text>
                   
-                  {formData.logoUrl ? (
-                    <BlockStack gap="200">
-                      <Thumbnail
-                        source={formData.logoUrl}
-                        alt="Logo"
-                        size="large"
-                      />
-                      <Button onClick={removeLogo} size="micro">Remove logo</Button>
-                    </BlockStack>
-                  ) : (
-                    <DropZone onDrop={handleLogoUpload} accept="image/*" type="image">
-                      <DropZone.FileUpload actionTitle="Add logo" actionHint="or drop files to upload" />
-                    </DropZone>
-                  )}
+                  {(() => {
+                    const currentDesign = selectedSectionForDesign 
+                      ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)?.design?.logoUrl || formData.logoUrl
+                      : formData.logoUrl;
+                    
+                    return currentDesign ? (
+                      <BlockStack gap="200">
+                        <Thumbnail
+                          source={currentDesign}
+                          alt="Logo"
+                          size="large"
+                        />
+                        <Button onClick={removeLogo} size="micro">Remove logo</Button>
+                      </BlockStack>
+                    ) : (
+                      <DropZone onDrop={handleLogoUpload} accept="image/*" type="image">
+                        <DropZone.FileUpload actionTitle="Add logo" actionHint="or drop files to upload" />
+                      </DropZone>
+                    );
+                  })()}
                   
                   <Text as="p" variant="bodySm">Logo width</Text>
                   <RangeSlider
                     label="Logo width"
-                    value={formData.logoWidth}
-                    onChange={(value) => updateFormData("logoWidth", value)}
+                    value={getDesignFieldValue("logoWidth")}
+                    onChange={(value) => updateDesignField("logoWidth", value)}
                     min={10}
                     max={100}
                     suffix="%"
@@ -982,8 +1133,8 @@ export default function PopupEditor() {
                       { label: "Large", value: "large" },
                       { label: "Small", value: "small" },
                     ]}
-                    value={formData.displaySize}
-                    onChange={(value) => updateFormData("displaySize", value)}
+                    value={getDesignFieldValue("displaySize")}
+                    onChange={(value) => updateDesignField("displaySize", value)}
                   />
                   
                   <Select
@@ -993,8 +1144,8 @@ export default function PopupEditor() {
                       { label: "Left", value: "left" },
                       { label: "Right", value: "right" },
                     ]}
-                    value={formData.alignment}
-                    onChange={(value) => updateFormData("alignment", value)}
+                    value={getDesignFieldValue("alignment")}
+                    onChange={(value) => updateDesignField("alignment", value)}
                   />
                   
                   <Select
@@ -1004,8 +1155,8 @@ export default function PopupEditor() {
                       { label: "Rounded", value: "rounded" },
                       { label: "Square", value: "square" },
                     ]}
-                    value={formData.cornerRadius}
-                    onChange={(value) => updateFormData("cornerRadius", value)}
+                    value={getDesignFieldValue("cornerRadius")}
+                    onChange={(value) => updateDesignField("cornerRadius", value)}
                   />
                   
                   <Text as="h4" variant="headingMd">Layout</Text>
@@ -1019,20 +1170,20 @@ export default function PopupEditor() {
                       { label: "Top", value: "top" },
                       { label: "Background", value: "background" },
                     ]}
-                    value={formData.imagePosition}
-                    onChange={(value) => updateFormData("imagePosition", value)}
+                    value={getDesignFieldValue("imagePosition")}
+                    onChange={(value) => updateDesignField("imagePosition", value)}
                   />
                   
                   <Checkbox
                     label="Hide on mobile"
-                    checked={formData.hideOnMobile}
-                    onChange={(checked) => updateFormData("hideOnMobile", checked)}
+                    checked={getDesignFieldValue("hideOnMobile")}
+                    onChange={(checked) => updateDesignField("hideOnMobile", checked)}
                   />
                   
                   <Checkbox
                     label="Background on mobile"
-                    checked={formData.backgroundOnMobile}
-                    onChange={(checked) => updateFormData("backgroundOnMobile", checked)}
+                    checked={getDesignFieldValue("backgroundOnMobile")}
+                    onChange={(checked) => updateDesignField("backgroundOnMobile", checked)}
                   />
                   
                   <Text as="h4" variant="headingMd">Image</Text>
@@ -1040,20 +1191,24 @@ export default function PopupEditor() {
                     Less than 2MB. Accepts .jpg, .png, .gif, .jpeg recommended: 620 x 400 pixels.
                   </Text>
                   
-                  {formData.imageUrl ? (
-                    <BlockStack gap="200">
-                      <Thumbnail
-                        source={formData.imageUrl}
-                        alt="Popup image"
-                        size="large"
-                      />
-                      <Button onClick={removeImage} size="micro">Remove image</Button>
-                    </BlockStack>
-                  ) : (
-                    <DropZone onDrop={handleImageUpload} accept="image/*" type="image">
-                      <DropZone.FileUpload actionTitle="Add image" actionHint="or drop files to upload" />
-                    </DropZone>
-                  )}
+                  {(() => {
+                    const currentImageUrl = getDesignFieldValue("imageUrl");
+                    
+                    return currentImageUrl ? (
+                      <BlockStack gap="200">
+                        <Thumbnail
+                          source={currentImageUrl}
+                          alt="Popup image"
+                          size="large"
+                        />
+                        <Button onClick={removeImage} size="micro">Remove image</Button>
+                      </BlockStack>
+                    ) : (
+                      <DropZone onDrop={handleImageUpload} accept="image/*" type="image">
+                        <DropZone.FileUpload actionTitle="Add image" actionHint="or drop files to upload" />
+                      </DropZone>
+                    );
+                  })()}
                   
                   <Divider />
                   
@@ -1062,100 +1217,100 @@ export default function PopupEditor() {
                   <Text as="h5" variant="headingSm">POPUP</Text>
                   <ColorPickerField
                     label="Background"
-                    value={formData.popupBackground}
-                    onChange={(value) => updateFormData("popupBackground", value)}
+                    value={getDesignFieldValue("popupBackground")}
+                    onChange={(value) => updateDesignField("popupBackground", value)}
                   />
                   
                   <Text as="h5" variant="headingSm">TEXT</Text>
                   <ColorPickerField
                     label="Heading"
-                    value={formData.textHeading}
-                    onChange={(value) => updateFormData("textHeading", value)}
+                    value={getDesignFieldValue("textHeading")}
+                    onChange={(value) => updateDesignField("textHeading", value)}
                   />
                   <ColorPickerField
                     label="Description"
-                    value={formData.textDescription}
-                    onChange={(value) => updateFormData("textDescription", value)}
+                    value={getDesignFieldValue("textDescription")}
+                    onChange={(value) => updateDesignField("textDescription", value)}
                   />
                   <ColorPickerField
                     label="Input"
-                    value={formData.textInput}
-                    onChange={(value) => updateFormData("textInput", value)}
+                    value={getDesignFieldValue("textInput")}
+                    onChange={(value) => updateDesignField("textInput", value)}
                   />
                   <ColorPickerField
                     label="Consent"
-                    value={formData.textConsent}
-                    onChange={(value) => updateFormData("textConsent", value)}
+                    value={getDesignFieldValue("textConsent")}
+                    onChange={(value) => updateDesignField("textConsent", value)}
                   />
                   <ColorPickerField
                     label="Error"
-                    value={formData.textError}
-                    onChange={(value) => updateFormData("textError", value)}
+                    value={getDesignFieldValue("textError")}
+                    onChange={(value) => updateDesignField("textError", value)}
                   />
                   <ColorPickerField
                     label="Label"
-                    value={formData.textLabel}
-                    onChange={(value) => updateFormData("textLabel", value)}
+                    value={getDesignFieldValue("textLabel")}
+                    onChange={(value) => updateDesignField("textLabel", value)}
                   />
                   <ColorPickerField
                     label="Footer text"
-                    value={formData.textFooter}
-                    onChange={(value) => updateFormData("textFooter", value)}
+                    value={getDesignFieldValue("textFooter")}
+                    onChange={(value) => updateDesignField("textFooter", value)}
                   />
                   
                   <Text as="h5" variant="headingSm">PRIMARY BUTTON</Text>
                   <ColorPickerField
                     label="Background"
-                    value={formData.primaryBtnBg}
-                    onChange={(value) => updateFormData("primaryBtnBg", value)}
+                    value={getDesignFieldValue("primaryBtnBg")}
+                    onChange={(value) => updateDesignField("primaryBtnBg", value)}
                   />
                   <ColorPickerField
                     label="Text"
-                    value={formData.primaryBtnText}
-                    onChange={(value) => updateFormData("primaryBtnText", value)}
+                    value={getDesignFieldValue("primaryBtnText")}
+                    onChange={(value) => updateDesignField("primaryBtnText", value)}
                   />
                   
                   <Text as="h5" variant="headingSm">SECONDARY BUTTON</Text>
                   <ColorPickerField
                     label="Text"
-                    value={formData.secondaryBtnText}
-                    onChange={(value) => updateFormData("secondaryBtnText", value)}
+                    value={getDesignFieldValue("secondaryBtnText")}
+                    onChange={(value) => updateDesignField("secondaryBtnText", value)}
                   />
                   
                   <Text as="h5" variant="headingSm">CUSTOM BUTTONS</Text>
                   <ColorPickerField
                     label="Background"
-                    value={formData.customBtnBg}
-                    onChange={(value) => updateFormData("customBtnBg", value)}
+                    value={getDesignFieldValue("customBtnBg")}
+                    onChange={(value) => updateDesignField("customBtnBg", value)}
                   />
                   <ColorPickerField
                     label="Text"
-                    value={formData.customBtnText}
-                    onChange={(value) => updateFormData("customBtnText", value)}
+                    value={getDesignFieldValue("customBtnText")}
+                    onChange={(value) => updateDesignField("customBtnText", value)}
                   />
                   
                   <Text as="h5" variant="headingSm">Sticky discount bar</Text>
                   <ColorPickerField
                     label="Background"
-                    value={formData.stickyBarBg}
-                    onChange={(value) => updateFormData("stickyBarBg", value)}
+                    value={getDesignFieldValue("stickyBarBg")}
+                    onChange={(value) => updateDesignField("stickyBarBg", value)}
                   />
                   <ColorPickerField
                     label="Text"
-                    value={formData.stickyBarText}
-                    onChange={(value) => updateFormData("stickyBarText", value)}
+                    value={getDesignFieldValue("stickyBarText")}
+                    onChange={(value) => updateDesignField("stickyBarText", value)}
                   />
                   
                   <Text as="h5" variant="headingSm">Sidebar widget</Text>
                   <ColorPickerField
                     label="Background"
-                    value={formData.sidebarBg}
-                    onChange={(value) => updateFormData("sidebarBg", value)}
+                    value={getDesignFieldValue("sidebarBg")}
+                    onChange={(value) => updateDesignField("sidebarBg", value)}
                   />
                   <ColorPickerField
                     label="Text"
-                    value={formData.sidebarText}
-                    onChange={(value) => updateFormData("sidebarText", value)}
+                    value={getDesignFieldValue("sidebarText")}
+                    onChange={(value) => updateDesignField("sidebarText", value)}
                   />
                   
                   <Divider />
@@ -1285,23 +1440,23 @@ export default function PopupEditor() {
                     }}>
                       {/* Mobile Popup */}
                       <div style={{
-                        backgroundColor: formData.popupBackground,
-                        padding: formData.hideOnMobile ? "0" : 
-                               formData.backgroundOnMobile ? "20px" :
-                               (formData.imagePosition === "left" || formData.imagePosition === "right") ? "0" : 
-                               formData.imagePosition === "top" ? "0 20px 20px 20px" : "20px",
-                        borderRadius: formData.cornerRadius === "rounded" ? "12px" : 
-                                    formData.cornerRadius === "square" ? "0px" : "8px",
-                        width: formData.hideOnMobile ? "0" : "100%",
-                        height: formData.hideOnMobile ? "0" : "auto",
-                        visibility: formData.hideOnMobile ? "hidden" : "visible",
-                        textAlign: formData.alignment as any,
-                        boxShadow: formData.hideOnMobile ? "none" : "0 4px 16px rgba(0,0,0,0.1)",
+                        backgroundColor: currentSectionDesign.popupBackground,
+                        padding: currentSectionDesign.hideOnMobile ? "0" : 
+                               currentSectionDesign.backgroundOnMobile ? "20px" :
+                               (currentSectionDesign.imagePosition === "left" || currentSectionDesign.imagePosition === "right") ? "0" : 
+                               currentSectionDesign.imagePosition === "top" ? "0 20px 20px 20px" : "20px",
+                        borderRadius: currentSectionDesign.cornerRadius === "rounded" ? "12px" : 
+                                    currentSectionDesign.cornerRadius === "square" ? "0px" : "8px",
+                        width: currentSectionDesign.hideOnMobile ? "0" : "100%",
+                        height: currentSectionDesign.hideOnMobile ? "0" : "auto",
+                        visibility: currentSectionDesign.hideOnMobile ? "hidden" : "visible",
+                        textAlign: currentSectionDesign.alignment as any,
+                        boxShadow: currentSectionDesign.hideOnMobile ? "none" : "0 4px 16px rgba(0,0,0,0.1)",
                         position: "relative",
-                        display: formData.hideOnMobile ? "none" : "flex",
+                        display: currentSectionDesign.hideOnMobile ? "none" : "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        backgroundImage: formData.imagePosition === "background" && formData.imageUrl ? `url(${formData.imageUrl})` : "none",
+                        backgroundImage: currentSectionDesign.imagePosition === "background" && currentSectionDesign.imageUrl ? `url(${currentSectionDesign.imageUrl})` : "none",
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         backgroundRepeat: "no-repeat",
@@ -1309,7 +1464,7 @@ export default function PopupEditor() {
                         margin: "20px auto",
                         maxHeight: "500px"
                       }}>
-                        {!formData.hideOnMobile && (
+                        {!currentSectionDesign.hideOnMobile && (
                           <>
                             <button style={{
                               position: "absolute",
@@ -1320,21 +1475,21 @@ export default function PopupEditor() {
                               fontSize: "18px",
                               cursor: "pointer",
                               zIndex: 10,
-                              color: formData.imagePosition === "background" ? "#fff" : "#000"
+                              color: currentSectionDesign.imagePosition === "background" ? "#fff" : "#000"
                             }}>×</button>
                             
                             {/* Mobile Image Top */}
-                            {formData.imagePosition === "top" && formData.imageUrl && (
+                            {currentSectionDesign.imagePosition === "top" && currentSectionDesign.imageUrl && (
                               <div style={{ width: "100%" }}>
                                 <img 
-                                  src={formData.imageUrl} 
+                                  src={currentSectionDesign.imageUrl} 
                                   alt="Popup image"
                                   style={{
                                     width: "100%",
                                     height: "120px",
                                     objectFit: "cover",
-                                    borderRadius: formData.cornerRadius === "rounded" ? "12px 12px 0 0" : 
-                                                formData.cornerRadius === "square" ? "0" : "8px 8px 0 0",
+                                    borderRadius: currentSectionDesign.cornerRadius === "rounded" ? "12px 12px 0 0" : 
+                                                currentSectionDesign.cornerRadius === "square" ? "0" : "8px 8px 0 0",
                                     display: "block"
                                   }}
                                 />
@@ -1343,19 +1498,19 @@ export default function PopupEditor() {
                             
                             <div style={{ 
                               width: "100%",
-                              padding: formData.imagePosition === "top" ? "16px 20px 20px 20px" : "0"
+                              padding: currentSectionDesign.imagePosition === "top" ? "16px 20px 20px 20px" : "0"
                             }}>
                               {/* Mobile Logo */}
-                              {formData.logoUrl && (
+                              {currentSectionDesign.logoUrl && (
                                 <div style={{ 
                                   marginBottom: "12px",
-                                  textAlign: formData.alignment as any
+                                  textAlign: currentSectionDesign.alignment as any
                                 }}>
                                   <img 
-                                    src={formData.logoUrl} 
+                                    src={currentSectionDesign.logoUrl} 
                                     alt="Logo"
                                     style={{
-                                      maxWidth: `${Math.min(formData.logoWidth, 60)}%`,
+                                      maxWidth: `${Math.min(currentSectionDesign.logoWidth, 60)}%`,
                                       height: "auto",
                                       maxHeight: "40px"
                                     }}
@@ -1366,20 +1521,20 @@ export default function PopupEditor() {
                               <div style={{ 
                                 marginBottom: "16px",
                                 position: "relative",
-                                zIndex: formData.imagePosition === "background" ? 5 : "auto",
-                                color: formData.imagePosition === "background" ? "#fff" : "inherit",
-                                textShadow: formData.imagePosition === "background" ? "0 1px 2px rgba(0,0,0,0.5)" : "none"
+                                zIndex: currentSectionDesign.imagePosition === "background" ? 5 : "auto",
+                                color: currentSectionDesign.imagePosition === "background" ? "#fff" : "inherit",
+                                textShadow: currentSectionDesign.imagePosition === "background" ? "0 1px 2px rgba(0,0,0,0.5)" : "none"
                               }}>
                                 <h2 style={{ 
                                   fontSize: "20px", 
                                   fontWeight: "600", 
                                   marginBottom: "8px",
-                                  color: formData.imagePosition === "background" ? "#fff" : formData.textHeading
+                                  color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.textHeading
                                 }}>
                                   {currentSection.content.heading || "Get 10% OFF your order"}
                                 </h2>
                                 <p style={{ 
-                                  color: formData.imagePosition === "background" ? "#fff" : formData.textDescription, 
+                                  color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.textDescription, 
                                   marginBottom: "0",
                                   fontSize: "14px"
                                 }}>
@@ -1390,7 +1545,7 @@ export default function PopupEditor() {
                               <div style={{ 
                                 marginBottom: "16px",
                                 position: "relative",
-                                zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                                zIndex: currentSectionDesign.imagePosition === "background" ? 5 : "auto"
                               }}>
                                 {currentSection.content.enableEmailCapture && (
                                   <input
@@ -1403,15 +1558,15 @@ export default function PopupEditor() {
                                       borderRadius: "6px",
                                       fontSize: "14px",
                                       marginBottom: "10px",
-                                      color: formData.textInput,
+                                      color: currentSectionDesign.textInput,
                                       boxSizing: "border-box"
                                     }}
                                   />
                                 )}
                                 
                                 <button style={{
-                                  backgroundColor: formData.primaryBtnBg,
-                                  color: formData.primaryBtnText,
+                                  backgroundColor: currentSectionDesign.primaryBtnBg,
+                                  color: currentSectionDesign.primaryBtnText,
                                   border: "none",
                                   padding: "10px 20px",
                                   borderRadius: "6px",
@@ -1428,7 +1583,7 @@ export default function PopupEditor() {
                                   <button style={{
                                     background: "none",
                                     border: "none",
-                                    color: formData.imagePosition === "background" ? "#fff" : formData.secondaryBtnText,
+                                    color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.secondaryBtnText,
                                     fontSize: "12px",
                                     cursor: "pointer",
                                     textDecoration: "underline"
@@ -1442,9 +1597,9 @@ export default function PopupEditor() {
                                   <button 
                                     key={button.id}
                                     style={{
-                                      backgroundColor: button.style === "outline" ? "transparent" : formData.customBtnBg,
-                                      color: button.style === "outline" ? formData.customBtnBg : formData.customBtnText,
-                                      border: button.style === "outline" ? `1px solid ${formData.customBtnBg}` : "none",
+                                      backgroundColor: button.style === "outline" ? "transparent" : currentSectionDesign.customBtnBg,
+                                      color: button.style === "outline" ? currentSectionDesign.customBtnBg : currentSectionDesign.customBtnText,
+                                      border: button.style === "outline" ? `1px solid ${currentSectionDesign.customBtnBg}` : "none",
                                       padding: "6px 12px",
                                       borderRadius: "6px",
                                       width: "100%",
@@ -1464,11 +1619,11 @@ export default function PopupEditor() {
                               {currentSection.content.footerText && (
                                 <p style={{
                                   fontSize: "10px",
-                                  color: formData.imagePosition === "background" ? "#fff" : formData.textFooter,
+                                  color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.textFooter,
                                   lineHeight: "1.3",
                                   margin: "0",
                                   position: "relative",
-                                  zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                                  zIndex: currentSectionDesign.imagePosition === "background" ? 5 : "auto"
                                 }}>
                                   {currentSection.content.footerText}
                                 </p>
@@ -1477,7 +1632,7 @@ export default function PopupEditor() {
                           </>
                         )}
                         
-                        {formData.hideOnMobile && (
+                        {currentSectionDesign.hideOnMobile && (
                           <div style={{ 
                             padding: "40px 20px", 
                             textAlign: "center",
@@ -1494,25 +1649,25 @@ export default function PopupEditor() {
                 {/* Desktop Popup */}
                 {previewDevice === 'desktop' && (
                   <div style={{
-                    backgroundColor: formData.popupBackground,
-                    padding: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "0" : 
-                            formData.imagePosition === "top" ? "0 32px 32px 32px" : "32px",
-                    borderRadius: formData.cornerRadius === "rounded" ? "12px" : 
-                                formData.cornerRadius === "square" ? "0px" : "8px",
-                    maxWidth: formData.displaySize === "large" ? "600px" : 
-                             formData.displaySize === "small" ? "400px" : "500px",
+                    backgroundColor: currentSectionDesign.popupBackground,
+                    padding: (currentSectionDesign.imagePosition === "left" || currentSectionDesign.imagePosition === "right") ? "0" : 
+                            currentSectionDesign.imagePosition === "top" ? "0 32px 32px 32px" : "32px",
+                    borderRadius: currentSectionDesign.cornerRadius === "rounded" ? "12px" : 
+                                currentSectionDesign.cornerRadius === "square" ? "0px" : "8px",
+                    maxWidth: currentSectionDesign.displaySize === "large" ? "600px" : 
+                             currentSectionDesign.displaySize === "small" ? "400px" : "500px",
                     width: "90%",
-                    textAlign: formData.alignment as any,
+                    textAlign: currentSectionDesign.alignment as any,
                     boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
                     position: "relative",
                     display: "flex",
-                    flexDirection: formData.imagePosition === "top" ? "column" : "row",
-                    alignItems: formData.imagePosition === "left" || formData.imagePosition === "right" ? "stretch" : "center",
-                    backgroundImage: formData.imagePosition === "background" && formData.imageUrl ? `url(${formData.imageUrl})` : "none",
+                    flexDirection: currentSectionDesign.imagePosition === "top" ? "column" : "row",
+                    alignItems: currentSectionDesign.imagePosition === "left" || currentSectionDesign.imagePosition === "right" ? "stretch" : "center",
+                    backgroundImage: currentSectionDesign.imagePosition === "background" && currentSectionDesign.imageUrl ? `url(${currentSectionDesign.imageUrl})` : "none",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
-                    minHeight: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "400px" : "auto",
+                    minHeight: (currentSectionDesign.imagePosition === "left" || currentSectionDesign.imagePosition === "right") ? "400px" : "auto",
                     overflow: "hidden"
                   }}>
                     <button style={{
@@ -1527,40 +1682,40 @@ export default function PopupEditor() {
                     }}>×</button>
                   
                   {/* Image Left */}
-                  {formData.imagePosition === "left" && formData.imageUrl && (
+                  {currentSectionDesign.imagePosition === "left" && currentSectionDesign.imageUrl && (
                     <div style={{ 
                       flexShrink: 0,
                       alignSelf: "stretch"
                     }}>
                       <img 
-                        src={formData.imageUrl} 
+                        src={currentSectionDesign.imageUrl} 
                         alt="Popup image"
                         style={{
                           width: "200px",
                           height: "100%",
                           objectFit: "cover",
-                          borderRadius: formData.cornerRadius === "rounded" ? "12px 0 0 12px" : 
-                                      formData.cornerRadius === "square" ? "0" : "8px 0 0 8px"
+                          borderRadius: currentSectionDesign.cornerRadius === "rounded" ? "12px 0 0 12px" : 
+                                      currentSectionDesign.cornerRadius === "square" ? "0" : "8px 0 0 8px"
                         }}
                       />
                     </div>
                   )}
                   
                   {/* Image Top - Outside content div to span full width */}
-                  {formData.imagePosition === "top" && formData.imageUrl && (
+                  {currentSectionDesign.imagePosition === "top" && currentSectionDesign.imageUrl && (
                     <div style={{ 
                       order: -1,
                       width: "100%"
                     }}>
                       <img 
-                        src={formData.imageUrl} 
+                        src={currentSectionDesign.imageUrl} 
                         alt="Popup image"
                         style={{
                           width: "100%",
                           height: "200px",
                           objectFit: "cover",
-                          borderRadius: formData.cornerRadius === "rounded" ? "12px 12px 0 0" : 
-                                      formData.cornerRadius === "square" ? "0" : "8px 8px 0 0",
+                          borderRadius: currentSectionDesign.cornerRadius === "rounded" ? "12px 12px 0 0" : 
+                                      currentSectionDesign.cornerRadius === "square" ? "0" : "8px 8px 0 0",
                           display: "block"
                         }}
                       />
@@ -1569,28 +1724,28 @@ export default function PopupEditor() {
                   
                   <div style={{ 
                     flex: 1,
-                    order: formData.imagePosition === "right" ? 1 : 2,
-                    padding: (formData.imagePosition === "left" || formData.imagePosition === "right") ? "32px" : 
-                            formData.imagePosition === "top" ? "24px 32px 32px 32px" : "0"
+                    order: currentSectionDesign.imagePosition === "right" ? 1 : 2,
+                    padding: (currentSectionDesign.imagePosition === "left" || currentSectionDesign.imagePosition === "right") ? "32px" : 
+                            currentSectionDesign.imagePosition === "top" ? "24px 32px 32px 32px" : "0"
                   }}>
                     
                     <div style={{ 
                       marginBottom: "24px",
                       position: "relative",
-                      zIndex: formData.imagePosition === "background" ? 5 : "auto",
-                      color: formData.imagePosition === "background" ? "#fff" : "inherit",
-                      textShadow: formData.imagePosition === "background" ? "0 1px 2px rgba(0,0,0,0.5)" : "none"
+                      zIndex: currentSectionDesign.imagePosition === "background" ? 5 : "auto",
+                      color: currentSectionDesign.imagePosition === "background" ? "#fff" : "inherit",
+                      textShadow: currentSectionDesign.imagePosition === "background" ? "0 1px 2px rgba(0,0,0,0.5)" : "none"
                     }}>
                       <h2 style={{ 
                         fontSize: "24px", 
                         fontWeight: "600", 
                         marginBottom: "12px",
-                        color: formData.imagePosition === "background" ? "#fff" : formData.textHeading
+                        color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.textHeading
                       }}>
                         {currentSection.content.heading || "Get 10% OFF your order"}
                       </h2>
                       <p style={{ 
-                        color: formData.imagePosition === "background" ? "#fff" : formData.textDescription, 
+                        color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.textDescription, 
                         marginBottom: "0",
                         fontSize: "16px"
                       }}>
@@ -1601,7 +1756,7 @@ export default function PopupEditor() {
                     <div style={{ 
                       marginBottom: "24px",
                       position: "relative",
-                      zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                      zIndex: currentSectionDesign.imagePosition === "background" ? 5 : "auto"
                     }}>
                       {currentSection.content.enableEmailCapture && (
                         <input
@@ -1614,14 +1769,14 @@ export default function PopupEditor() {
                             borderRadius: "6px",
                             fontSize: "16px",
                             marginBottom: "12px",
-                            color: formData.textInput
+                            color: currentSectionDesign.textInput
                           }}
                         />
                       )}
                       
                       <button style={{
-                        backgroundColor: formData.primaryBtnBg,
-                        color: formData.primaryBtnText,
+                        backgroundColor: currentSectionDesign.primaryBtnBg,
+                        color: currentSectionDesign.primaryBtnText,
                         border: "none",
                         padding: "12px 24px",
                         borderRadius: "6px",
@@ -1638,7 +1793,7 @@ export default function PopupEditor() {
                         <button style={{
                           background: "none",
                           border: "none",
-                          color: formData.imagePosition === "background" ? "#fff" : formData.secondaryBtnText,
+                          color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.secondaryBtnText,
                           fontSize: "14px",
                           cursor: "pointer",
                           textDecoration: "underline"
@@ -1652,9 +1807,9 @@ export default function PopupEditor() {
                         <button 
                           key={button.id}
                           style={{
-                            backgroundColor: button.style === "outline" ? "transparent" : formData.customBtnBg,
-                            color: button.style === "outline" ? formData.customBtnBg : formData.customBtnText,
-                            border: button.style === "outline" ? `1px solid ${formData.customBtnBg}` : "none",
+                            backgroundColor: button.style === "outline" ? "transparent" : currentSectionDesign.customBtnBg,
+                            color: button.style === "outline" ? currentSectionDesign.customBtnBg : currentSectionDesign.customBtnText,
+                            border: button.style === "outline" ? `1px solid ${currentSectionDesign.customBtnBg}` : "none",
                             padding: "8px 16px",
                             borderRadius: "6px",
                             width: "100%",
@@ -1674,11 +1829,11 @@ export default function PopupEditor() {
                     {currentSection.content.footerText && (
                       <p style={{
                         fontSize: "12px",
-                        color: formData.imagePosition === "background" ? "#fff" : formData.textFooter,
+                        color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.textFooter,
                         lineHeight: "1.4",
                         margin: "0",
                         position: "relative",
-                        zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                        zIndex: currentSectionDesign.imagePosition === "background" ? 5 : "auto"
                       }}>
                         {currentSection.content.footerText}
                       </p>
@@ -1686,21 +1841,21 @@ export default function PopupEditor() {
                   </div>
                   
                   {/* Image Right */}
-                  {formData.imagePosition === "right" && formData.imageUrl && (
+                  {currentSectionDesign.imagePosition === "right" && currentSectionDesign.imageUrl && (
                     <div style={{ 
                       flexShrink: 0,
                       order: 2,
                       alignSelf: "stretch"
                     }}>
                       <img 
-                        src={formData.imageUrl} 
+                        src={currentSectionDesign.imageUrl} 
                         alt="Popup image"
                         style={{
                           width: "200px",
                           height: "100%",
                           objectFit: "cover",
-                          borderRadius: formData.cornerRadius === "rounded" ? "0 12px 12px 0" : 
-                                      formData.cornerRadius === "square" ? "0" : "0 8px 8px 0"
+                          borderRadius: currentSectionDesign.cornerRadius === "rounded" ? "0 12px 12px 0" : 
+                                      currentSectionDesign.cornerRadius === "square" ? "0" : "0 8px 8px 0"
                         }}
                       />
                     </div>
