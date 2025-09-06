@@ -209,6 +209,7 @@ export default function PopupEditor() {
   const [previewStep, setPreviewStep] = useState(0);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [selectedSectionForDesign, setSelectedSectionForDesign] = useState<number | null>(null);
+  const [selectedButtonForDesign, setSelectedButtonForDesign] = useState<string | null>(null);
   const [logoFiles, setLogoFiles] = useState<File[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -233,7 +234,11 @@ export default function PopupEditor() {
         // Action buttons
         primaryButton: popup.primaryButton || "Claim discount",
         buttonText: popup.primaryButton || "Claim discount",
-        secondaryButton: popup.secondaryButton || "No, thanks",
+        primaryButtonStyle: {
+          backgroundColor: popup.primaryBtnBg || "#000000",
+          textColor: popup.primaryBtnText || "#FFFFFF",
+          style: "filled"
+        },
         
         // Additional elements
         customButtons: [],
@@ -482,7 +487,12 @@ export default function PopupEditor() {
       text: "New Button",
       action: "link",
       url: "",
-      style: "outline"
+      style: "outline",
+      buttonStyle: {
+        backgroundColor: formData.customBtnBg || "#E5E5E5",
+        textColor: formData.customBtnText || "#000000",
+        style: "outline"
+      }
     };
     
     const updatedSections = formData.sections.map((section: any) =>
@@ -551,7 +561,11 @@ export default function PopupEditor() {
         // Action buttons
         primaryButton: "Continue",
         buttonText: "Continue",
-        secondaryButton: "",
+        primaryButtonStyle: {
+          backgroundColor: "#000000",
+          textColor: "#FFFFFF",
+          style: "filled"
+        },
         
         // Additional elements
         customButtons: [],
@@ -648,6 +662,95 @@ export default function PopupEditor() {
     updateFormData("sections", reorderedSections);
   };
 
+  // Button styling functions
+  const updateButtonStyle = (buttonId: string, styleField: string, value: any) => {
+    if (buttonId === "primary") {
+      // Update primary button style
+      if (selectedSectionForDesign) {
+        const updatedSections = formData.sections.map((section: any) =>
+          section.id === selectedSectionForDesign
+            ? {
+                ...section,
+                content: {
+                  ...section.content,
+                  primaryButtonStyle: {
+                    ...section.content.primaryButtonStyle,
+                    [styleField]: value
+                  }
+                }
+              }
+            : section
+        );
+        updateFormData("sections", updatedSections);
+      } else {
+        // Update first section for single-step popups
+        const updatedSections = formData.sections.map((section: any, index: number) =>
+          index === 0
+            ? {
+                ...section,
+                content: {
+                  ...section.content,
+                  primaryButtonStyle: {
+                    ...section.content.primaryButtonStyle,
+                    [styleField]: value
+                  }
+                }
+              }
+            : section
+        );
+        updateFormData("sections", updatedSections);
+      }
+    } else if (buttonId.startsWith("custom-")) {
+      // Update custom button style
+      const customButtonId = parseInt(buttonId.replace("custom-", ""));
+      const sectionId = selectedSectionForDesign || formData.sections[0]?.id;
+      
+      const updatedSections = formData.sections.map((section: any) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              content: {
+                ...section.content,
+                customButtons: (section.content.customButtons || []).map((btn: any) =>
+                  btn.id === customButtonId
+                    ? {
+                        ...btn,
+                        buttonStyle: {
+                          ...btn.buttonStyle,
+                          [styleField]: value
+                        }
+                      }
+                    : btn
+                )
+              }
+            }
+          : section
+      );
+      updateFormData("sections", updatedSections);
+    }
+  };
+
+  const getButtonStyle = (buttonId: string, styleField: string) => {
+    const currentSection = selectedSectionForDesign 
+      ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)
+      : formData.sections[0];
+    
+    if (buttonId === "primary") {
+      return currentSection?.content?.primaryButtonStyle?.[styleField] || 
+             (styleField === "backgroundColor" ? formData.primaryBtnBg : 
+              styleField === "textColor" ? formData.primaryBtnText : "filled");
+    } else if (buttonId.startsWith("custom-")) {
+      const customButtonId = parseInt(buttonId.replace("custom-", ""));
+      const customButton = (currentSection?.content?.customButtons || [])
+        .find((btn: any) => btn.id === customButtonId);
+      return customButton?.buttonStyle?.[styleField] || 
+             (styleField === "backgroundColor" ? formData.customBtnBg : 
+              styleField === "textColor" ? formData.customBtnText : "outline");
+    }
+    
+    return "";
+  };
+
   // Preview navigation functions
   const nextStep = () => {
     if (previewStep < formData.sections.length - 1) {
@@ -688,8 +791,7 @@ export default function PopupEditor() {
           heading: "Get 10% OFF your order",
           description: "Sign up and unlock your instant discount.",
           emailPlaceholder: "Email address",
-          primaryButton: "Claim discount",
-          secondaryButton: "No, thanks"
+          primaryButton: "Claim discount"
         },
         design: {
           // Use global design settings as fallback
@@ -868,19 +970,13 @@ export default function PopupEditor() {
                               
                               <Text as="h6" variant="headingSm">ACTIONS</Text>
                               <TextField
-                                label="Primary button text"
+                                label="Button text"
                                 value={section.content.primaryButton || section.content.buttonText || ""}
                                 onChange={(value) => {
                                   updateSectionContent(section.id, "primaryButton", value);
                                   updateSectionContent(section.id, "buttonText", value);
                                 }}
                                 placeholder="Continue"
-                              />
-                              <TextField
-                                label="Secondary button text (Optional)"
-                                value={section.content.secondaryButton || ""}
-                                onChange={(value) => updateSectionContent(section.id, "secondaryButton", value)}
-                                placeholder="Skip"
                               />
                               
                               <Text as="h6" variant="headingSm">CUSTOM BUTTONS</Text>
@@ -1156,6 +1252,73 @@ export default function PopupEditor() {
                   
                   <Divider />
                   
+                  {/* Button Selection */}
+                  <Card>
+                    <BlockStack gap="300">
+                      <InlineStack align="space-between">
+                        <Text as="h5" variant="headingSm">Choose button to customize</Text>
+                        {selectedButtonForDesign && (
+                          <Button 
+                            size="micro" 
+                            variant="secondary"
+                            onClick={() => setSelectedButtonForDesign(null)}
+                          >
+                            Clear Selection
+                          </Button>
+                        )}
+                      </InlineStack>
+                      
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {/* Primary Button */}
+                        <Button
+                          size="micro"
+                          variant={selectedButtonForDesign === "primary" ? "primary" : "secondary"}
+                          onClick={() => setSelectedButtonForDesign("primary")}
+                        >
+                          Primary Button
+                        </Button>
+                        
+                        {/* Custom Buttons */}
+                        {(() => {
+                          const currentSection = selectedSectionForDesign 
+                            ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)
+                            : formData.sections[0];
+                          
+                          return (currentSection?.content?.customButtons || []).map((button: any, index: number) => (
+                            <Button
+                              key={button.id}
+                              size="micro"
+                              variant={selectedButtonForDesign === `custom-${button.id}` ? "primary" : "secondary"}
+                              onClick={() => setSelectedButtonForDesign(`custom-${button.id}`)}
+                            >
+                              {button.text || `Custom ${index + 1}`}
+                            </Button>
+                          ));
+                        })()}
+                      </div>
+                      
+                      {selectedButtonForDesign && (
+                        <Banner tone="info">
+                          <Text as="p" variant="bodyMd">
+                            You are now editing: <strong>
+                              {(() => {
+                                if (selectedButtonForDesign === "primary") return "Primary Button";
+                                const currentSection = selectedSectionForDesign 
+                                  ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)
+                                  : formData.sections[0];
+                                const customButton = (currentSection?.content?.customButtons || [])
+                                  .find((btn: any) => `custom-${btn.id}` === selectedButtonForDesign);
+                                return customButton?.text || "Custom Button";
+                              })()}
+                            </strong>
+                          </Text>
+                        </Banner>
+                      )}
+                    </BlockStack>
+                  </Card>
+                  
+                  <Divider />
+                  
                   <Text as="h4" variant="headingMd">Logo</Text>
                   <Text as="p" variant="bodyMd">
                     Less than 2MB. Accepts .jpg, .png, .gif, .jpeg recommended: 620 x 400 pixels.
@@ -1342,36 +1505,44 @@ export default function PopupEditor() {
                     onChange={(value) => updateDesignField("textFooter", value)}
                   />
                   
-                  <Text as="h5" variant="headingSm">PRIMARY BUTTON</Text>
-                  <ColorPickerField
-                    label="Background"
-                    value={getDesignFieldValue("primaryBtnBg")}
-                    onChange={(value) => updateDesignField("primaryBtnBg", value)}
-                  />
-                  <ColorPickerField
-                    label="Text"
-                    value={getDesignFieldValue("primaryBtnText")}
-                    onChange={(value) => updateDesignField("primaryBtnText", value)}
-                  />
-                  
-                  <Text as="h5" variant="headingSm">SECONDARY BUTTON</Text>
-                  <ColorPickerField
-                    label="Text"
-                    value={getDesignFieldValue("secondaryBtnText")}
-                    onChange={(value) => updateDesignField("secondaryBtnText", value)}
-                  />
-                  
-                  <Text as="h5" variant="headingSm">CUSTOM BUTTONS</Text>
-                  <ColorPickerField
-                    label="Background"
-                    value={getDesignFieldValue("customBtnBg")}
-                    onChange={(value) => updateDesignField("customBtnBg", value)}
-                  />
-                  <ColorPickerField
-                    label="Text"
-                    value={getDesignFieldValue("customBtnText")}
-                    onChange={(value) => updateDesignField("customBtnText", value)}
-                  />
+                  {/* Button-specific design controls */}
+                  {selectedButtonForDesign ? (
+                    <BlockStack gap="300">
+                      <Text as="h5" variant="headingSm">
+                        {selectedButtonForDesign === "primary" ? "PRIMARY BUTTON" : "CUSTOM BUTTON"}
+                      </Text>
+                      
+                      <ColorPickerField
+                        label="Background"
+                        value={getButtonStyle(selectedButtonForDesign, "backgroundColor")}
+                        onChange={(value) => updateButtonStyle(selectedButtonForDesign, "backgroundColor", value)}
+                      />
+                      <ColorPickerField
+                        label="Text"
+                        value={getButtonStyle(selectedButtonForDesign, "textColor")}
+                        onChange={(value) => updateButtonStyle(selectedButtonForDesign, "textColor", value)}
+                      />
+                      
+                      {selectedButtonForDesign !== "primary" && (
+                        <Select
+                          label="Button style"
+                          options={[
+                            { label: "Filled", value: "filled" },
+                            { label: "Outline", value: "outline" },
+                            { label: "Plain", value: "plain" },
+                          ]}
+                          value={getButtonStyle(selectedButtonForDesign, "style")}
+                          onChange={(value) => updateButtonStyle(selectedButtonForDesign, "style", value)}
+                        />
+                      )}
+                    </BlockStack>
+                  ) : (
+                    <Banner tone="warning">
+                      <Text as="p" variant="bodyMd">
+                        Select a button above to customize its design.
+                      </Text>
+                    </Banner>
+                  )}
                   
                   <Text as="h5" variant="headingSm">Sticky discount bar</Text>
                   <ColorPickerField
@@ -1649,55 +1820,50 @@ export default function PopupEditor() {
                                 )}
                                 
                                 <button style={{
-                                  backgroundColor: currentSectionDesign.primaryBtnBg,
-                                  color: currentSectionDesign.primaryBtnText,
-                                  border: "none",
+                                  backgroundColor: currentSection.content.primaryButtonStyle?.backgroundColor || currentSectionDesign.primaryBtnBg,
+                                  color: currentSection.content.primaryButtonStyle?.textColor || currentSectionDesign.primaryBtnText,
+                                  border: selectedButtonForDesign === "primary" ? "2px solid #0070f3" : "none",
                                   padding: "10px 20px",
                                   borderRadius: "6px",
                                   width: "100%",
                                   fontSize: "14px",
                                   fontWeight: "500",
                                   cursor: "pointer",
-                                  marginBottom: "10px"
+                                  marginBottom: "10px",
+                                  boxShadow: selectedButtonForDesign === "primary" ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
                                 }}>
                                   {currentSection.content.primaryButton || currentSection.content.buttonText || "Claim discount"}
                                 </button>
                                 
-                                {currentSection.content.secondaryButton && (
-                                  <button style={{
-                                    background: "none",
-                                    border: "none",
-                                    color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.secondaryBtnText,
-                                    fontSize: "12px",
-                                    cursor: "pointer",
-                                    textDecoration: "underline"
-                                  }}>
-                                    {currentSection.content.secondaryButton}
-                                  </button>
-                                )}
-                                
                                 {/* Custom Buttons */}
-                                {(currentSection.content.customButtons || []).map((button: any) => (
-                                  <button 
-                                    key={button.id}
-                                    style={{
-                                      backgroundColor: button.style === "outline" ? "transparent" : currentSectionDesign.customBtnBg,
-                                      color: button.style === "outline" ? currentSectionDesign.customBtnBg : currentSectionDesign.customBtnText,
-                                      border: button.style === "outline" ? `1px solid ${currentSectionDesign.customBtnBg}` : "none",
-                                      padding: "6px 12px",
-                                      borderRadius: "6px",
-                                      width: "100%",
-                                      fontSize: "12px",
-                                      fontWeight: "500",
-                                      cursor: "pointer",
-                                      marginTop: "6px",
-                                      textDecoration: button.style === "plain" ? "underline" : "none",
-                                      background: button.style === "plain" ? "none" : undefined
-                                    }}
-                                  >
-                                    {button.text}
-                                  </button>
-                                ))}
+                                {(currentSection.content.customButtons || []).map((button: any) => {
+                                  const isSelected = selectedButtonForDesign === `custom-${button.id}`;
+                                  const buttonStyle = button.buttonStyle || { backgroundColor: currentSectionDesign.customBtnBg, textColor: currentSectionDesign.customBtnText, style: "outline" };
+                                  
+                                  return (
+                                    <button 
+                                      key={button.id}
+                                      style={{
+                                        backgroundColor: buttonStyle.style === "outline" || buttonStyle.style === "plain" ? "transparent" : buttonStyle.backgroundColor,
+                                        color: buttonStyle.style === "outline" ? buttonStyle.backgroundColor : buttonStyle.textColor,
+                                        border: isSelected ? "2px solid #0070f3" : 
+                                               buttonStyle.style === "outline" ? `1px solid ${buttonStyle.backgroundColor}` : "none",
+                                        padding: "10px 20px",
+                                        borderRadius: "6px",
+                                        width: "100%",
+                                        fontSize: "14px",
+                                        fontWeight: "500",
+                                        cursor: "pointer",
+                                        marginBottom: "10px",
+                                        textDecoration: buttonStyle.style === "plain" ? "underline" : "none",
+                                        background: buttonStyle.style === "plain" ? "none" : undefined,
+                                        boxShadow: isSelected ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
+                                      }}
+                                    >
+                                      {button.text}
+                                    </button>
+                                  );
+                                })}
                               </div>
                               
                               {currentSection.content.footerText && (
@@ -1859,55 +2025,50 @@ export default function PopupEditor() {
                       )}
                       
                       <button style={{
-                        backgroundColor: currentSectionDesign.primaryBtnBg,
-                        color: currentSectionDesign.primaryBtnText,
-                        border: "none",
+                        backgroundColor: currentSection.content.primaryButtonStyle?.backgroundColor || currentSectionDesign.primaryBtnBg,
+                        color: currentSection.content.primaryButtonStyle?.textColor || currentSectionDesign.primaryBtnText,
+                        border: selectedButtonForDesign === "primary" ? "2px solid #0070f3" : "none",
                         padding: "12px 24px",
                         borderRadius: "6px",
                         width: "100%",
                         fontSize: "16px",
                         fontWeight: "500",
                         cursor: "pointer",
-                        marginBottom: "12px"
+                        marginBottom: "12px",
+                        boxShadow: selectedButtonForDesign === "primary" ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
                       }}>
                         {currentSection.content.primaryButton || currentSection.content.buttonText || "Claim discount"}
                       </button>
                       
-                      {currentSection.content.secondaryButton && (
-                        <button style={{
-                          background: "none",
-                          border: "none",
-                          color: currentSectionDesign.imagePosition === "background" ? "#fff" : currentSectionDesign.secondaryBtnText,
-                          fontSize: "14px",
-                          cursor: "pointer",
-                          textDecoration: "underline"
-                        }}>
-                          {currentSection.content.secondaryButton}
-                        </button>
-                      )}
-                      
                       {/* Custom Buttons */}
-                      {(currentSection.content.customButtons || []).map((button: any) => (
-                        <button 
-                          key={button.id}
-                          style={{
-                            backgroundColor: button.style === "outline" ? "transparent" : currentSectionDesign.customBtnBg,
-                            color: button.style === "outline" ? currentSectionDesign.customBtnBg : currentSectionDesign.customBtnText,
-                            border: button.style === "outline" ? `1px solid ${currentSectionDesign.customBtnBg}` : "none",
-                            padding: "8px 16px",
-                            borderRadius: "6px",
-                            width: "100%",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            cursor: "pointer",
-                            marginTop: "8px",
-                            textDecoration: button.style === "plain" ? "underline" : "none",
-                            background: button.style === "plain" ? "none" : undefined
-                          }}
-                        >
-                          {button.text}
-                        </button>
-                      ))}
+                      {(currentSection.content.customButtons || []).map((button: any) => {
+                        const isSelected = selectedButtonForDesign === `custom-${button.id}`;
+                        const buttonStyle = button.buttonStyle || { backgroundColor: currentSectionDesign.customBtnBg, textColor: currentSectionDesign.customBtnText, style: "outline" };
+                        
+                        return (
+                          <button 
+                            key={button.id}
+                            style={{
+                              backgroundColor: buttonStyle.style === "outline" || buttonStyle.style === "plain" ? "transparent" : buttonStyle.backgroundColor,
+                              color: buttonStyle.style === "outline" ? buttonStyle.backgroundColor : buttonStyle.textColor,
+                              border: isSelected ? "2px solid #0070f3" : 
+                                     buttonStyle.style === "outline" ? `1px solid ${buttonStyle.backgroundColor}` : "none",
+                              padding: "12px 24px",
+                              borderRadius: "6px",
+                              width: "100%",
+                              fontSize: "16px",
+                              fontWeight: "500",
+                              cursor: "pointer",
+                              marginBottom: "12px",
+                              textDecoration: buttonStyle.style === "plain" ? "underline" : "none",
+                              background: buttonStyle.style === "plain" ? "none" : undefined,
+                              boxShadow: isSelected ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
+                            }}
+                          >
+                            {button.text}
+                          </button>
+                        );
+                      })}
                     </div>
                     
                     {currentSection.content.footerText && (
