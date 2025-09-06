@@ -210,6 +210,7 @@ export default function PopupEditor() {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [selectedSectionForDesign, setSelectedSectionForDesign] = useState<number | null>(null);
   const [selectedButtonForDesign, setSelectedButtonForDesign] = useState<string | null>(null);
+  const [buttonColors, setButtonColors] = useState<{[key: string]: {backgroundColor: string, textColor: string, style: string}}>({});
   const [logoFiles, setLogoFiles] = useState<File[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -326,6 +327,24 @@ export default function PopupEditor() {
       shopify.toast.show(fetcher.data.error, { isError: true });
     }
   }, [fetcher.data, shopify]);
+
+  // Initialize button colors when a button is selected
+  useEffect(() => {
+    if (selectedButtonForDesign && !buttonColors[selectedButtonForDesign]) {
+      const currentButtonColors = getButtonStyle(selectedButtonForDesign, "backgroundColor");
+      const currentTextColors = getButtonStyle(selectedButtonForDesign, "textColor");
+      const currentStyle = getButtonStyle(selectedButtonForDesign, "style");
+      
+      setButtonColors(prev => ({
+        ...prev,
+        [selectedButtonForDesign]: {
+          backgroundColor: currentButtonColors || (selectedButtonForDesign === "primary" ? "#000000" : "#E5E5E5"),
+          textColor: currentTextColors || (selectedButtonForDesign === "primary" ? "#FFFFFF" : "#000000"),
+          style: currentStyle || (selectedButtonForDesign === "primary" ? "filled" : "outline")
+        }
+      }));
+    }
+  }, [selectedButtonForDesign, selectedSectionForDesign, buttonColors]);
 
   const handleSave = () => {
     const form = new FormData();
@@ -664,6 +683,15 @@ export default function PopupEditor() {
 
   // Button styling functions
   const updateButtonStyle = (buttonId: string, styleField: string, value: any) => {
+    // First update the local button colors state for immediate UI feedback
+    setButtonColors(prev => ({
+      ...prev,
+      [buttonId]: {
+        ...prev[buttonId],
+        [styleField]: value
+      }
+    }));
+
     if (buttonId === "primary") {
       // Update primary button style
       if (selectedSectionForDesign) {
@@ -705,6 +733,13 @@ export default function PopupEditor() {
             : section
         );
         updateFormData("sections", updatedSections);
+        
+        // Also update global values for compatibility
+        if (styleField === "backgroundColor") {
+          updateFormData("primaryBtnBg", value);
+        } else if (styleField === "textColor") {
+          updateFormData("primaryBtnText", value);
+        }
       }
     } else if (buttonId.startsWith("custom-")) {
       // Update custom button style
@@ -736,6 +771,13 @@ export default function PopupEditor() {
           : section
       );
       updateFormData("sections", updatedSections);
+      
+      // Also update global values for compatibility
+      if (styleField === "backgroundColor") {
+        updateFormData("customBtnBg", value);
+      } else if (styleField === "textColor") {
+        updateFormData("customBtnText", value);
+      }
     }
   };
 
@@ -1529,28 +1571,25 @@ export default function PopupEditor() {
                   {selectedButtonForDesign ? (
                     <BlockStack gap="300">
                       <ColorPickerField
-                        key={`${selectedButtonForDesign}-background`}
                         label="Background"
-                        value={getButtonStyle(selectedButtonForDesign, "backgroundColor")}
+                        value={buttonColors[selectedButtonForDesign]?.backgroundColor || getButtonStyle(selectedButtonForDesign, "backgroundColor")}
                         onChange={(value) => updateButtonStyle(selectedButtonForDesign, "backgroundColor", value)}
                       />
                       <ColorPickerField
-                        key={`${selectedButtonForDesign}-text`}
                         label="Text"
-                        value={getButtonStyle(selectedButtonForDesign, "textColor")}
+                        value={buttonColors[selectedButtonForDesign]?.textColor || getButtonStyle(selectedButtonForDesign, "textColor")}
                         onChange={(value) => updateButtonStyle(selectedButtonForDesign, "textColor", value)}
                       />
                       
                       {selectedButtonForDesign !== "primary" && (
                         <Select
-                          key={`${selectedButtonForDesign}-style`}
                           label="Button style"
                           options={[
                             { label: "Filled", value: "filled" },
                             { label: "Outline", value: "outline" },
                             { label: "Plain", value: "plain" },
                           ]}
-                          value={getButtonStyle(selectedButtonForDesign, "style")}
+                          value={buttonColors[selectedButtonForDesign]?.style || getButtonStyle(selectedButtonForDesign, "style")}
                           onChange={(value) => updateButtonStyle(selectedButtonForDesign, "style", value)}
                         />
                       )}
@@ -1857,14 +1896,15 @@ export default function PopupEditor() {
                                 {/* Custom Buttons */}
                                 {(currentSection.content.customButtons || []).map((button: any) => {
                                   const isSelected = selectedButtonForDesign === `custom-${button.id}`;
-                                  const buttonStyle = button.buttonStyle || { backgroundColor: currentSectionDesign.customBtnBg, textColor: currentSectionDesign.customBtnText, style: "outline" };
+                                  const localColors = buttonColors[`custom-${button.id}`];
+                                  const buttonStyle = localColors || button.buttonStyle || { backgroundColor: currentSectionDesign.customBtnBg, textColor: currentSectionDesign.customBtnText, style: "outline" };
                                   
                                   return (
                                     <button 
                                       key={button.id}
                                       style={{
-                                        backgroundColor: buttonStyle.style === "outline" || buttonStyle.style === "plain" ? "transparent" : buttonStyle.backgroundColor,
-                                        color: buttonStyle.style === "outline" ? buttonStyle.backgroundColor : buttonStyle.textColor,
+                                        backgroundColor: buttonStyle.style === "plain" ? "transparent" : buttonStyle.backgroundColor,
+                                        color: buttonStyle.textColor,
                                         border: isSelected ? "2px solid #0070f3" : 
                                                buttonStyle.style === "outline" ? `1px solid ${buttonStyle.backgroundColor}` : "none",
                                         padding: "10px 20px",
@@ -1875,7 +1915,6 @@ export default function PopupEditor() {
                                         cursor: "pointer",
                                         marginBottom: "10px",
                                         textDecoration: buttonStyle.style === "plain" ? "underline" : "none",
-                                        background: buttonStyle.style === "plain" ? "none" : undefined,
                                         boxShadow: isSelected ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
                                       }}
                                     >
@@ -2062,14 +2101,15 @@ export default function PopupEditor() {
                       {/* Custom Buttons */}
                       {(currentSection.content.customButtons || []).map((button: any) => {
                         const isSelected = selectedButtonForDesign === `custom-${button.id}`;
-                        const buttonStyle = button.buttonStyle || { backgroundColor: currentSectionDesign.customBtnBg, textColor: currentSectionDesign.customBtnText, style: "outline" };
+                        const localColors = buttonColors[`custom-${button.id}`];
+                        const buttonStyle = localColors || button.buttonStyle || { backgroundColor: currentSectionDesign.customBtnBg, textColor: currentSectionDesign.customBtnText, style: "outline" };
                         
                         return (
                           <button 
                             key={button.id}
                             style={{
-                              backgroundColor: buttonStyle.style === "outline" || buttonStyle.style === "plain" ? "transparent" : buttonStyle.backgroundColor,
-                              color: buttonStyle.style === "outline" ? buttonStyle.backgroundColor : buttonStyle.textColor,
+                              backgroundColor: buttonStyle.style === "plain" ? "transparent" : buttonStyle.backgroundColor,
+                              color: buttonStyle.textColor,
                               border: isSelected ? "2px solid #0070f3" : 
                                      buttonStyle.style === "outline" ? `1px solid ${buttonStyle.backgroundColor}` : "none",
                               padding: "12px 24px",
@@ -2080,7 +2120,6 @@ export default function PopupEditor() {
                               cursor: "pointer",
                               marginBottom: "12px",
                               textDecoration: buttonStyle.style === "plain" ? "underline" : "none",
-                              background: buttonStyle.style === "plain" ? "none" : undefined,
                               boxShadow: isSelected ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
                             }}
                           >

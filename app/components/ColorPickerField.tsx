@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ColorPicker, TextField, BlockStack, InlineStack, Text, Box, Popover, Button } from "@shopify/polaris";
 
 interface ColorPickerFieldProps {
@@ -9,6 +9,14 @@ interface ColorPickerFieldProps {
 
 // Helper functions for color conversion
 function hexToHsb(hex: string): { hue: number; saturation: number; brightness: number } {
+  // Ensure hex is valid, default to black if not
+  if (!hex || hex.length < 6) {
+    hex = "#000000";
+  }
+  if (!hex.startsWith('#')) {
+    hex = '#' + hex;
+  }
+  
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -75,6 +83,14 @@ export function ColorPickerField({ label, value, onChange }: ColorPickerFieldPro
   const [hsbColor, setHsbColor] = useState(hexToHsb(value));
   const [popoverActive, setPopoverActive] = useState(false);
 
+  // Sync internal state when external value changes
+  useEffect(() => {
+    if (value && value !== hexInput) {
+      setHexInput(value);
+      setHsbColor(hexToHsb(value));
+    }
+  }, [value, hexInput]);
+
   const handleColorPickerChange = useCallback((color: { hue: number; saturation: number; brightness: number }) => {
     setHsbColor(color);
     const hexValue = hsbToHex(color);
@@ -83,14 +99,28 @@ export function ColorPickerField({ label, value, onChange }: ColorPickerFieldPro
   }, [onChange]);
 
   const handleHexInputChange = useCallback((inputValue: string) => {
-    setHexInput(inputValue);
+    // Ensure input starts with # if it doesn't
+    let cleanInput = inputValue;
+    if (!cleanInput.startsWith('#') && cleanInput.length > 0) {
+      cleanInput = '#' + cleanInput;
+    }
     
-    // Validate hex format
+    setHexInput(cleanInput);
+    
+    // Validate hex format (both #FFFFFF and FFFFFF)
     const hexRegex = /^#[0-9A-Fa-f]{6}$/;
-    if (hexRegex.test(inputValue)) {
-      const hsbValue = hexToHsb(inputValue);
+    if (hexRegex.test(cleanInput)) {
+      const hsbValue = hexToHsb(cleanInput);
       setHsbColor(hsbValue);
-      onChange(inputValue);
+      onChange(cleanInput.toUpperCase());
+    } else if (cleanInput.length === 7) {
+      // If it's not valid but has the right length, still try to process
+      const hexWithHash = cleanInput.startsWith('#') ? cleanInput : '#' + cleanInput;
+      if (/^#[0-9A-Fa-f]{6}$/.test(hexWithHash)) {
+        const hsbValue = hexToHsb(hexWithHash);
+        setHsbColor(hsbValue);
+        onChange(hexWithHash.toUpperCase());
+      }
     }
   }, [onChange]);
 
