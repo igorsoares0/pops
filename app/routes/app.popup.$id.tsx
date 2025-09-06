@@ -674,6 +674,9 @@ export default function PopupEditor() {
                 content: {
                   ...section.content,
                   primaryButtonStyle: {
+                    backgroundColor: "#000000",
+                    textColor: "#FFFFFF", 
+                    style: "filled",
                     ...section.content.primaryButtonStyle,
                     [styleField]: value
                   }
@@ -691,6 +694,9 @@ export default function PopupEditor() {
                 content: {
                   ...section.content,
                   primaryButtonStyle: {
+                    backgroundColor: "#000000",
+                    textColor: "#FFFFFF",
+                    style: "filled",
                     ...section.content.primaryButtonStyle,
                     [styleField]: value
                   }
@@ -716,6 +722,9 @@ export default function PopupEditor() {
                     ? {
                         ...btn,
                         buttonStyle: {
+                          backgroundColor: "#E5E5E5",
+                          textColor: "#000000",
+                          style: "outline",
                           ...btn.buttonStyle,
                           [styleField]: value
                         }
@@ -736,16 +745,27 @@ export default function PopupEditor() {
       : formData.sections[0];
     
     if (buttonId === "primary") {
-      return currentSection?.content?.primaryButtonStyle?.[styleField] || 
-             (styleField === "backgroundColor" ? formData.primaryBtnBg : 
-              styleField === "textColor" ? formData.primaryBtnText : "filled");
+      const primaryStyle = currentSection?.content?.primaryButtonStyle;
+      if (styleField === "backgroundColor") {
+        return primaryStyle?.backgroundColor || formData.primaryBtnBg || "#000000";
+      } else if (styleField === "textColor") {
+        return primaryStyle?.textColor || formData.primaryBtnText || "#FFFFFF";
+      } else if (styleField === "style") {
+        return primaryStyle?.style || "filled";
+      }
     } else if (buttonId.startsWith("custom-")) {
       const customButtonId = parseInt(buttonId.replace("custom-", ""));
       const customButton = (currentSection?.content?.customButtons || [])
         .find((btn: any) => btn.id === customButtonId);
-      return customButton?.buttonStyle?.[styleField] || 
-             (styleField === "backgroundColor" ? formData.customBtnBg : 
-              styleField === "textColor" ? formData.customBtnText : "outline");
+      const buttonStyle = customButton?.buttonStyle;
+      
+      if (styleField === "backgroundColor") {
+        return buttonStyle?.backgroundColor || formData.customBtnBg || "#E5E5E5";
+      } else if (styleField === "textColor") {
+        return buttonStyle?.textColor || formData.customBtnText || "#000000";
+      } else if (styleField === "style") {
+        return buttonStyle?.style || "outline";
+      }
     }
     
     return "";
@@ -1252,73 +1272,6 @@ export default function PopupEditor() {
                   
                   <Divider />
                   
-                  {/* Button Selection */}
-                  <Card>
-                    <BlockStack gap="300">
-                      <InlineStack align="space-between">
-                        <Text as="h5" variant="headingSm">Choose button to customize</Text>
-                        {selectedButtonForDesign && (
-                          <Button 
-                            size="micro" 
-                            variant="secondary"
-                            onClick={() => setSelectedButtonForDesign(null)}
-                          >
-                            Clear Selection
-                          </Button>
-                        )}
-                      </InlineStack>
-                      
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {/* Primary Button */}
-                        <Button
-                          size="micro"
-                          variant={selectedButtonForDesign === "primary" ? "primary" : "secondary"}
-                          onClick={() => setSelectedButtonForDesign("primary")}
-                        >
-                          Primary Button
-                        </Button>
-                        
-                        {/* Custom Buttons */}
-                        {(() => {
-                          const currentSection = selectedSectionForDesign 
-                            ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)
-                            : formData.sections[0];
-                          
-                          return (currentSection?.content?.customButtons || []).map((button: any, index: number) => (
-                            <Button
-                              key={button.id}
-                              size="micro"
-                              variant={selectedButtonForDesign === `custom-${button.id}` ? "primary" : "secondary"}
-                              onClick={() => setSelectedButtonForDesign(`custom-${button.id}`)}
-                            >
-                              {button.text || `Custom ${index + 1}`}
-                            </Button>
-                          ));
-                        })()}
-                      </div>
-                      
-                      {selectedButtonForDesign && (
-                        <Banner tone="info">
-                          <Text as="p" variant="bodyMd">
-                            You are now editing: <strong>
-                              {(() => {
-                                if (selectedButtonForDesign === "primary") return "Primary Button";
-                                const currentSection = selectedSectionForDesign 
-                                  ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)
-                                  : formData.sections[0];
-                                const customButton = (currentSection?.content?.customButtons || [])
-                                  .find((btn: any) => `custom-${btn.id}` === selectedButtonForDesign);
-                                return customButton?.text || "Custom Button";
-                              })()}
-                            </strong>
-                          </Text>
-                        </Banner>
-                      )}
-                    </BlockStack>
-                  </Card>
-                  
-                  <Divider />
-                  
                   <Text as="h4" variant="headingMd">Logo</Text>
                   <Text as="p" variant="bodyMd">
                     Less than 2MB. Accepts .jpg, .png, .gif, .jpeg recommended: 620 x 400 pixels.
@@ -1505,19 +1458,84 @@ export default function PopupEditor() {
                     onChange={(value) => updateDesignField("textFooter", value)}
                   />
                   
+                  <Text as="h5" variant="headingSm">CUSTOM BUTTONS</Text>
+                  
+                  {/* Button Selection */}
+                  <Card>
+                    <BlockStack gap="300">
+                      <InlineStack align="space-between">
+                        <Text as="h6" variant="headingXs">Choose button to customize</Text>
+                        {selectedButtonForDesign && (
+                          <Button 
+                            size="micro" 
+                            variant="secondary"
+                            onClick={() => setSelectedButtonForDesign(null)}
+                          >
+                            Clear Selection
+                          </Button>
+                        )}
+                      </InlineStack>
+                      
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {/* Primary Button */}
+                        <Button
+                          size="micro"
+                          variant={selectedButtonForDesign === "primary" ? "primary" : "secondary"}
+                          onClick={() => setSelectedButtonForDesign("primary")}
+                        >
+                          Primary Button
+                        </Button>
+                        
+                        {/* Custom Buttons */}
+                        {(() => {
+                          const currentSection = selectedSectionForDesign 
+                            ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)
+                            : formData.sections[0];
+                          
+                          return (currentSection?.content?.customButtons || []).map((button: any, index: number) => (
+                            <Button
+                              key={button.id}
+                              size="micro"
+                              variant={selectedButtonForDesign === `custom-${button.id}` ? "primary" : "secondary"}
+                              onClick={() => setSelectedButtonForDesign(`custom-${button.id}`)}
+                            >
+                              {button.text || `Custom ${index + 1}`}
+                            </Button>
+                          ));
+                        })()}
+                      </div>
+                      
+                      {selectedButtonForDesign && (
+                        <Banner tone="info">
+                          <Text as="p" variant="bodyMd">
+                            You are now editing: <strong>
+                              {(() => {
+                                if (selectedButtonForDesign === "primary") return "Primary Button";
+                                const currentSection = selectedSectionForDesign 
+                                  ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)
+                                  : formData.sections[0];
+                                const customButton = (currentSection?.content?.customButtons || [])
+                                  .find((btn: any) => `custom-${btn.id}` === selectedButtonForDesign);
+                                return customButton?.text || "Custom Button";
+                              })()}
+                            </strong>
+                          </Text>
+                        </Banner>
+                      )}
+                    </BlockStack>
+                  </Card>
+                  
                   {/* Button-specific design controls */}
                   {selectedButtonForDesign ? (
                     <BlockStack gap="300">
-                      <Text as="h5" variant="headingSm">
-                        {selectedButtonForDesign === "primary" ? "PRIMARY BUTTON" : "CUSTOM BUTTON"}
-                      </Text>
-                      
                       <ColorPickerField
+                        key={`${selectedButtonForDesign}-background`}
                         label="Background"
                         value={getButtonStyle(selectedButtonForDesign, "backgroundColor")}
                         onChange={(value) => updateButtonStyle(selectedButtonForDesign, "backgroundColor", value)}
                       />
                       <ColorPickerField
+                        key={`${selectedButtonForDesign}-text`}
                         label="Text"
                         value={getButtonStyle(selectedButtonForDesign, "textColor")}
                         onChange={(value) => updateButtonStyle(selectedButtonForDesign, "textColor", value)}
@@ -1525,6 +1543,7 @@ export default function PopupEditor() {
                       
                       {selectedButtonForDesign !== "primary" && (
                         <Select
+                          key={`${selectedButtonForDesign}-style`}
                           label="Button style"
                           options={[
                             { label: "Filled", value: "filled" },
