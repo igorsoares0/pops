@@ -215,15 +215,27 @@ export default function PopupEditor() {
     isMultiStep: popup.isMultiStep || false,
     sections: popup.sections ? JSON.parse(popup.sections) : [{
       id: 1,
-      type: "email_capture",
+      type: "universal",
       title: "Email Capture",
       order: 0,
       content: {
+        // Basic content
         heading: popup.heading || "Get 10% OFF your order",
         description: popup.description || "Sign up and unlock your instant discount.",
+        
+        // Email capture fields
+        enableEmailCapture: true, // Default first section has email capture
         emailPlaceholder: popup.emailPlaceholder || "Email address",
+        
+        // Action buttons
         primaryButton: popup.primaryButton || "Claim discount",
-        secondaryButton: popup.secondaryButton || "No, thanks"
+        buttonText: popup.primaryButton || "Claim discount",
+        secondaryButton: popup.secondaryButton || "No, thanks",
+        
+        // Additional elements
+        customButtons: [],
+        footerText: popup.footerText || "You are signing up to receive communication via email and can unsubscribe at any time.",
+        imageUrl: ""
       }
     }],
     
@@ -355,33 +367,89 @@ export default function PopupEditor() {
     updateFormData("customButtons", filteredButtons);
   };
 
+  // Section Custom Buttons functions
+  const addSectionCustomButton = (sectionId: number) => {
+    const newButton = {
+      id: Date.now(),
+      text: "New Button",
+      action: "link",
+      url: "",
+      style: "outline"
+    };
+    
+    const updatedSections = formData.sections.map((section: any) =>
+      section.id === sectionId 
+        ? { 
+            ...section, 
+            content: { 
+              ...section.content, 
+              customButtons: [...(section.content.customButtons || []), newButton] 
+            } 
+          }
+        : section
+    );
+    updateFormData("sections", updatedSections);
+  };
+
+  const updateSectionCustomButton = (sectionId: number, buttonId: number, field: string, value: string) => {
+    const updatedSections = formData.sections.map((section: any) =>
+      section.id === sectionId 
+        ? { 
+            ...section, 
+            content: { 
+              ...section.content, 
+              customButtons: (section.content.customButtons || []).map((btn: any) =>
+                btn.id === buttonId ? { ...btn, [field]: value } : btn
+              )
+            } 
+          }
+        : section
+    );
+    updateFormData("sections", updatedSections);
+  };
+
+  const removeSectionCustomButton = (sectionId: number, buttonId: number) => {
+    const updatedSections = formData.sections.map((section: any) =>
+      section.id === sectionId 
+        ? { 
+            ...section, 
+            content: { 
+              ...section.content, 
+              customButtons: (section.content.customButtons || []).filter((btn: any) => btn.id !== buttonId)
+            } 
+          }
+        : section
+    );
+    updateFormData("sections", updatedSections);
+  };
+
   // Section management functions
-  const addSection = (type: "intro" | "email_capture" | "custom") => {
+  const addSection = (type: "intro" | "email_capture" | "custom" | "universal") => {
+    const sectionNumber = formData.sections.length + 1;
     const newSection = {
       id: Date.now(),
-      type,
-      title: type === "intro" ? "Introduction" : type === "email_capture" ? "Email Capture" : "Custom Section",
+      type: "universal", // All sections are now universal
+      title: `Section ${sectionNumber}`,
       order: formData.sections.length,
-      content: type === "intro" 
-        ? {
-            heading: "Welcome!",
-            description: "Discover our amazing products",
-            buttonText: "Continue",
-            imageUrl: ""
-          }
-        : type === "email_capture"
-        ? {
-            heading: "Get 10% OFF your order",
-            description: "Sign up and unlock your instant discount.",
-            emailPlaceholder: "Email address",
-            primaryButton: "Claim discount",
-            secondaryButton: "No, thanks"
-          }
-        : {
-            heading: "Custom Section",
-            description: "Add your custom content here",
-            buttonText: "Next"
-          }
+      content: {
+        // Basic content with neutral defaults
+        heading: `Section ${sectionNumber}`,
+        description: "Add your content here",
+        
+        // Email capture fields (disabled by default)
+        enableEmailCapture: false,
+        emailPlaceholder: "Email address",
+        
+        // Action buttons
+        primaryButton: "Continue",
+        buttonText: "Continue",
+        secondaryButton: "",
+        
+        // Additional elements
+        customButtons: [],
+        footerText: "",
+        imageUrl: ""
+      }
     };
     updateFormData("sections", [...formData.sections, newSection]);
   };
@@ -563,10 +631,10 @@ export default function PopupEditor() {
                             <InlineStack gap="300" align="space-between">
                               <InlineStack gap="200" align="center">
                                 <Text as="span" variant="bodyMd" tone="subdued">#{index + 1}</Text>
-                                <Text as="h6" variant="headingSm">{section.title}</Text>
-                                <Badge tone={section.type === "email_capture" ? "success" : section.type === "intro" ? "info" : "attention"}>
-                                  {section.type.replace("_", " ")}
-                                </Badge>
+                                <Text as="h6" variant="headingSm">{section.title || `Section ${index + 1}`}</Text>
+                                {section.content.enableEmailCapture && (
+                                  <Badge tone="success">Email Capture</Badge>
+                                )}
                               </InlineStack>
                               
                               {formData.isMultiStep && (
@@ -598,18 +666,6 @@ export default function PopupEditor() {
                               )}
                             </InlineStack>
                             
-                            {formData.isMultiStep && (
-                              <Select
-                                label="Section type"
-                                options={[
-                                  { label: "Introduction", value: "intro" },
-                                  { label: "Email Capture", value: "email_capture" },
-                                  { label: "Custom", value: "custom" },
-                                ]}
-                                value={section.type}
-                                onChange={(value) => updateSection(section.id, "type", value)}
-                              />
-                            )}
                             
                             {formData.isMultiStep && (
                               <TextField
@@ -620,189 +676,142 @@ export default function PopupEditor() {
                               />
                             )}
                             
-                            {section.type === "intro" && (
-                              <BlockStack gap="300">
-                                <Text as="h6" variant="headingSm">CONTENT</Text>
-                                <TextField
-                                  label="Heading"
-                                  value={section.content.heading}
-                                  onChange={(value) => updateSectionContent(section.id, "heading", value)}
-                                  maxLength={50}
-                                />
-                                <TextField
-                                  label="Description"
-                                  value={section.content.description}
-                                  onChange={(value) => updateSectionContent(section.id, "description", value)}
-                                  multiline={3}
-                                />
-                                
-                                <Text as="h6" variant="headingSm">ACTIONS</Text>
-                                <TextField
-                                  label="Button text"
-                                  value={section.content.buttonText}
-                                  onChange={(value) => updateSectionContent(section.id, "buttonText", value)}
-                                />
-                              </BlockStack>
-                            )}
-                            
-                            {section.type === "email_capture" && (
-                              <BlockStack gap="300">
-                                <Text as="h6" variant="headingSm">CONTENT</Text>
-                                <TextField
-                                  label="Heading"
-                                  value={section.content.heading}
-                                  onChange={(value) => updateSectionContent(section.id, "heading", value)}
-                                  maxLength={50}
-                                />
-                                <TextField
-                                  label="Description"
-                                  value={section.content.description}
-                                  onChange={(value) => updateSectionContent(section.id, "description", value)}
-                                  multiline={3}
-                                />
-                                
-                                <Text as="h6" variant="headingSm">FORM</Text>
+                            <BlockStack gap="300">
+                              <Text as="h6" variant="headingSm">CONTENT</Text>
+                              <TextField
+                                label="Heading"
+                                value={section.content.heading || ""}
+                                onChange={(value) => updateSectionContent(section.id, "heading", value)}
+                                maxLength={50}
+                                placeholder="Enter section heading"
+                              />
+                              <TextField
+                                label="Description"
+                                value={section.content.description || ""}
+                                onChange={(value) => updateSectionContent(section.id, "description", value)}
+                                multiline={3}
+                                placeholder="Enter section description"
+                              />
+                              
+                              <Text as="h6" variant="headingSm">EMAIL FORM (Optional)</Text>
+                              <Checkbox
+                                label="Enable email capture"
+                                checked={section.content.enableEmailCapture || false}
+                                onChange={(checked) => updateSectionContent(section.id, "enableEmailCapture", checked)}
+                                helpText="Show email input field in this section"
+                              />
+                              
+                              {section.content.enableEmailCapture && (
                                 <TextField
                                   label="Email placeholder"
-                                  value={section.content.emailPlaceholder}
+                                  value={section.content.emailPlaceholder || ""}
                                   onChange={(value) => updateSectionContent(section.id, "emailPlaceholder", value)}
+                                  placeholder="Email address"
                                 />
-                                
-                                <Text as="h6" variant="headingSm">ACTIONS</Text>
-                                <TextField
-                                  label="Primary button"
-                                  value={section.content.primaryButton}
-                                  onChange={(value) => updateSectionContent(section.id, "primaryButton", value)}
-                                />
-                                <TextField
-                                  label="Secondary button"
-                                  value={section.content.secondaryButton}
-                                  onChange={(value) => updateSectionContent(section.id, "secondaryButton", value)}
-                                />
-                              </BlockStack>
-                            )}
-                            
-                            {section.type === "custom" && (
-                              <BlockStack gap="300">
-                                <Text as="h6" variant="headingSm">CONTENT</Text>
-                                <TextField
-                                  label="Heading"
-                                  value={section.content.heading}
-                                  onChange={(value) => updateSectionContent(section.id, "heading", value)}
-                                  maxLength={50}
-                                />
-                                <TextField
-                                  label="Description"
-                                  value={section.content.description}
-                                  onChange={(value) => updateSectionContent(section.id, "description", value)}
-                                  multiline={4}
-                                />
-                                
-                                <Text as="h6" variant="headingSm">ACTIONS</Text>
-                                <TextField
-                                  label="Button text"
-                                  value={section.content.buttonText}
-                                  onChange={(value) => updateSectionContent(section.id, "buttonText", value)}
-                                />
-                              </BlockStack>
-                            )}
+                              )}
+                              
+                              <Text as="h6" variant="headingSm">ACTIONS</Text>
+                              <TextField
+                                label="Primary button text"
+                                value={section.content.primaryButton || section.content.buttonText || ""}
+                                onChange={(value) => {
+                                  updateSectionContent(section.id, "primaryButton", value);
+                                  updateSectionContent(section.id, "buttonText", value);
+                                }}
+                                placeholder="Continue"
+                              />
+                              <TextField
+                                label="Secondary button text (Optional)"
+                                value={section.content.secondaryButton || ""}
+                                onChange={(value) => updateSectionContent(section.id, "secondaryButton", value)}
+                                placeholder="Skip"
+                              />
+                              
+                              <Text as="h6" variant="headingSm">CUSTOM BUTTONS</Text>
+                              {(section.content.customButtons || []).map((button: any) => (
+                                <Card key={button.id}>
+                                  <BlockStack gap="300">
+                                    <InlineStack gap="300" align="space-between">
+                                      <Text as="h6" variant="headingSm">Custom Button</Text>
+                                      <Button 
+                                        size="micro" 
+                                        variant="plain" 
+                                        onClick={() => removeSectionCustomButton(section.id, button.id)}
+                                        icon={DeleteIcon}
+                                      />
+                                    </InlineStack>
+                                    
+                                    <TextField
+                                      label="Button text"
+                                      value={button.text}
+                                      onChange={(value) => updateSectionCustomButton(section.id, button.id, "text", value)}
+                                      placeholder="Button text"
+                                    />
+                                    
+                                    <Select
+                                      label="Action type"
+                                      options={[
+                                        { label: "Link to URL", value: "link" },
+                                        { label: "Close popup", value: "close" },
+                                        { label: "Custom action", value: "custom" },
+                                      ]}
+                                      value={button.action}
+                                      onChange={(value) => updateSectionCustomButton(section.id, button.id, "action", value)}
+                                    />
+                                    
+                                    {button.action === "link" && (
+                                      <TextField
+                                        label="URL"
+                                        value={button.url}
+                                        onChange={(value) => updateSectionCustomButton(section.id, button.id, "url", value)}
+                                        placeholder="https://example.com"
+                                      />
+                                    )}
+                                    
+                                    <Select
+                                      label="Button style"
+                                      options={[
+                                        { label: "Outline", value: "outline" },
+                                        { label: "Plain", value: "plain" },
+                                      ]}
+                                      value={button.style}
+                                      onChange={(value) => updateSectionCustomButton(section.id, button.id, "style", value)}
+                                    />
+                                  </BlockStack>
+                                </Card>
+                              ))}
+                              
+                              <Button 
+                                size="micro" 
+                                onClick={() => addSectionCustomButton(section.id)}
+                                icon={PlusIcon}
+                              >
+                                Add custom button
+                              </Button>
+                              
+                              <Text as="h6" variant="headingSm">FOOTER</Text>
+                              <TextField
+                                label="Footer text (Optional)"
+                                value={section.content.footerText || ""}
+                                onChange={(value) => updateSectionContent(section.id, "footerText", value)}
+                                multiline={3}
+                                placeholder="Text that appears at the bottom of this section"
+                              />
+                            </BlockStack>
                           </BlockStack>
                         </Card>
                       ))}
                       
                       {formData.isMultiStep && (
-                        <InlineStack gap="200">
-                          <Button size="micro" onClick={() => addSection("intro")}>
-                            Add Introduction
-                          </Button>
-                          <Button size="micro" onClick={() => addSection("email_capture")}>
-                            Add Email Capture
-                          </Button>
-                          <Button size="micro" onClick={() => addSection("custom")}>
-                            Add Custom
-                          </Button>
-                        </InlineStack>
+                        <Button 
+                          size="micro" 
+                          onClick={() => addSection("universal")}
+                          icon={PlusIcon}
+                        >
+                          Add Section
+                        </Button>
                       )}
                     </BlockStack>
-                  
-                  <Divider />
-                  
-                  <Text as="h4" variant="headingMd">Global Settings</Text>
-                  
-                  <Text as="h5" variant="headingSm">CUSTOM BUTTONS</Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    These buttons will appear on all sections (only on the last step for multi-step popups).
-                  </Text>
-                  
-                  {formData.customButtons.map((button: any) => (
-                    <Card key={button.id}>
-                      <BlockStack gap="300">
-                        <InlineStack gap="300" align="space-between">
-                          <Text as="h6" variant="headingSm">Custom Button</Text>
-                          <Button 
-                            size="micro" 
-                            variant="plain" 
-                            onClick={() => removeCustomButton(button.id)}
-                            icon={DeleteIcon}
-                          />
-                        </InlineStack>
-                        
-                        <TextField
-                          label="Button text"
-                          value={button.text}
-                          onChange={(value) => updateCustomButton(button.id, "text", value)}
-                          placeholder="Button text"
-                        />
-                        
-                        <Select
-                          label="Action type"
-                          options={[
-                            { label: "Link to URL", value: "link" },
-                            { label: "Close popup", value: "close" },
-                            { label: "Custom action", value: "custom" },
-                          ]}
-                          value={button.action}
-                          onChange={(value) => updateCustomButton(button.id, "action", value)}
-                        />
-                        
-                        {button.action === "link" && (
-                          <TextField
-                            label="URL"
-                            value={button.url}
-                            onChange={(value) => updateCustomButton(button.id, "url", value)}
-                            placeholder="https://example.com"
-                          />
-                        )}
-                        
-                        <Select
-                          label="Button style"
-                          options={[
-                            { label: "Outline", value: "outline" },
-                            { label: "Plain", value: "plain" },
-                          ]}
-                          value={button.style}
-                          onChange={(value) => updateCustomButton(button.id, "style", value)}
-                        />
-                      </BlockStack>
-                    </Card>
-                  ))}
-                  
-                  <Button 
-                    size="micro" 
-                    onClick={addCustomButton}
-                    icon={PlusIcon}
-                  >
-                    Add custom button
-                  </Button>
-                  
-                  <Text as="h5" variant="headingSm">FOOTER</Text>
-                  <TextField
-                    label="Footer text"
-                    value={formData.footerText}
-                    onChange={(value) => updateFormData("footerText", value)}
-                    multiline={3}
-                    helpText="This text appears at the bottom of email capture sections."
-                  />
                   
                   <Divider />
                   
@@ -1383,7 +1392,7 @@ export default function PopupEditor() {
                                 position: "relative",
                                 zIndex: formData.imagePosition === "background" ? 5 : "auto"
                               }}>
-                                {currentSection.type === "email_capture" && (
+                                {currentSection.content.enableEmailCapture && (
                                   <input
                                     type="email"
                                     placeholder={currentSection.content.emailPlaceholder || "Email address"}
@@ -1415,7 +1424,7 @@ export default function PopupEditor() {
                                   {currentSection.content.primaryButton || currentSection.content.buttonText || "Claim discount"}
                                 </button>
                                 
-                                {currentSection.type === "email_capture" && currentSection.content.secondaryButton && (
+                                {currentSection.content.secondaryButton && (
                                   <button style={{
                                     background: "none",
                                     border: "none",
@@ -1429,7 +1438,7 @@ export default function PopupEditor() {
                                 )}
                                 
                                 {/* Custom Buttons */}
-                                {formData.customButtons.map((button: any) => (
+                                {(currentSection.content.customButtons || []).map((button: any) => (
                                   <button 
                                     key={button.id}
                                     style={{
@@ -1452,16 +1461,18 @@ export default function PopupEditor() {
                                 ))}
                               </div>
                               
-                              <p style={{
-                                fontSize: "10px",
-                                color: formData.imagePosition === "background" ? "#fff" : formData.textFooter,
-                                lineHeight: "1.3",
-                                margin: "0",
-                                position: "relative",
-                                zIndex: formData.imagePosition === "background" ? 5 : "auto"
-                              }}>
-                                {formData.footerText || "You are signing up to receive communication via email and can unsubscribe at any time."}
-                              </p>
+                              {currentSection.content.footerText && (
+                                <p style={{
+                                  fontSize: "10px",
+                                  color: formData.imagePosition === "background" ? "#fff" : formData.textFooter,
+                                  lineHeight: "1.3",
+                                  margin: "0",
+                                  position: "relative",
+                                  zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                                }}>
+                                  {currentSection.content.footerText}
+                                </p>
+                              )}
                             </div>
                           </>
                         )}
@@ -1592,7 +1603,7 @@ export default function PopupEditor() {
                       position: "relative",
                       zIndex: formData.imagePosition === "background" ? 5 : "auto"
                     }}>
-                      {currentSection.type === "email_capture" && (
+                      {currentSection.content.enableEmailCapture && (
                         <input
                           type="email"
                           placeholder={currentSection.content.emailPlaceholder || "Email address"}
@@ -1623,7 +1634,7 @@ export default function PopupEditor() {
                         {currentSection.content.primaryButton || currentSection.content.buttonText || "Claim discount"}
                       </button>
                       
-                      {currentSection.type === "email_capture" && currentSection.content.secondaryButton && (
+                      {currentSection.content.secondaryButton && (
                         <button style={{
                           background: "none",
                           border: "none",
@@ -1637,7 +1648,7 @@ export default function PopupEditor() {
                       )}
                       
                       {/* Custom Buttons */}
-                      {formData.customButtons.map((button: any) => (
+                      {(currentSection.content.customButtons || []).map((button: any) => (
                         <button 
                           key={button.id}
                           style={{
@@ -1660,16 +1671,18 @@ export default function PopupEditor() {
                       ))}
                     </div>
                     
-                    <p style={{
-                      fontSize: "12px",
-                      color: formData.imagePosition === "background" ? "#fff" : formData.textFooter,
-                      lineHeight: "1.4",
-                      margin: "0",
-                      position: "relative",
-                      zIndex: formData.imagePosition === "background" ? 5 : "auto"
-                    }}>
-                      {formData.footerText || "You are signing up to receive communication via email and can unsubscribe at any time."}
-                    </p>
+                    {currentSection.content.footerText && (
+                      <p style={{
+                        fontSize: "12px",
+                        color: formData.imagePosition === "background" ? "#fff" : formData.textFooter,
+                        lineHeight: "1.4",
+                        margin: "0",
+                        position: "relative",
+                        zIndex: formData.imagePosition === "background" ? 5 : "auto"
+                      }}>
+                        {currentSection.content.footerText}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Image Right */}

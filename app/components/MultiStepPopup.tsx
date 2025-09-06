@@ -2,16 +2,20 @@ import { useState, useEffect } from "react";
 
 interface Section {
   id: number;
-  type: "intro" | "email_capture" | "custom";
+  type: "universal" | "intro" | "email_capture" | "custom"; // Keep backward compatibility
   title: string;
   order: number;
   content: {
     heading: string;
     description: string;
+    enableEmailCapture?: boolean;
     emailPlaceholder?: string;
     primaryButton?: string;
     secondaryButton?: string;
     buttonText?: string;
+    customButtons?: any[];
+    footerText?: string;
+    imageUrl?: string;
   };
 }
 
@@ -327,7 +331,7 @@ export function MultiStepPopup({
             position: "relative",
             zIndex: popupData.imagePosition === "background" ? 5 : "auto"
           }}>
-            {currentSection.type === "email_capture" ? (
+            {currentSection.content.enableEmailCapture ? (
               <form onSubmit={handleEmailSubmit}>
                 <input
                   type="email"
@@ -427,8 +431,8 @@ export function MultiStepPopup({
               </div>
             )}
 
-            {/* Custom Buttons - only show on last step */}
-            {isLastStep && popupData.customButtons?.map((button: any) => (
+            {/* Custom Buttons */}
+            {(currentSection.content.customButtons || []).map((button: any) => (
               <button 
                 key={button.id}
                 onClick={() => onButtonClick(button.action, currentSection.id, { url: button.url })}
@@ -453,7 +457,7 @@ export function MultiStepPopup({
           </div>
 
           {/* Footer */}
-          {popupData.footerText && currentSection.type === "email_capture" && (
+          {currentSection.content.footerText && currentSection.content.enableEmailCapture && (
             <p style={{
               fontSize: "12px",
               color: popupData.imagePosition === "background" ? "#fff" : popupData.textFooter || "#999",
@@ -462,7 +466,7 @@ export function MultiStepPopup({
               position: "relative",
               zIndex: popupData.imagePosition === "background" ? 5 : "auto"
             }}>
-              {popupData.footerText}
+              {currentSection.content.footerText}
             </p>
           )}
         </div>
