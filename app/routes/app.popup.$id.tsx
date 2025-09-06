@@ -211,6 +211,8 @@ export default function PopupEditor() {
   const [selectedSectionForDesign, setSelectedSectionForDesign] = useState<number | null>(null);
   const [logoFiles, setLogoFiles] = useState<File[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [formData, setFormData] = useState({
     // Multi-step
     isMultiStep: popup.isMultiStep || false,
@@ -347,7 +349,13 @@ export default function PopupEditor() {
     if (selectedSectionForDesign) {
       updateSectionDesign(selectedSectionForDesign, field, value);
     } else {
+      // Update global settings
       updateFormData(field, value);
+      
+      // For single-step popups, also update the first section's design
+      if (!formData.isMultiStep && formData.sections.length > 0) {
+        updateSectionDesign(formData.sections[0].id, field, value);
+      }
     }
   };
 
@@ -356,24 +364,81 @@ export default function PopupEditor() {
       const section = formData.sections.find((s: any) => s.id === selectedSectionForDesign);
       return section?.design?.[field] ?? formData[field];
     }
+    
+    // For single-step popups without selected section, check first section's design first
+    if (!formData.isMultiStep && formData.sections.length > 0) {
+      const firstSection = formData.sections[0];
+      return firstSection?.design?.[field] ?? formData[field];
+    }
+    
     return formData[field];
   };
 
-  const handleLogoUpload = (files: File[]) => {
-    setLogoFiles(files);
+  const handleLogoUpload = async (files: File[]) => {
     if (files.length > 0) {
       const file = files[0];
-      const url = URL.createObjectURL(file);
-      updateDesignField("logoUrl", url);
+      setLogoUploading(true);
+      setLogoFiles(files);
+      
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", "logo");
+        
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          updateDesignField("logoUrl", result.url);
+          shopify.toast.show("Logo uploaded successfully");
+        } else {
+          shopify.toast.show(result.error || "Failed to upload logo", { isError: true });
+          setLogoFiles([]);
+        }
+      } catch (error) {
+        shopify.toast.show("Failed to upload logo", { isError: true });
+        setLogoFiles([]);
+      } finally {
+        setLogoUploading(false);
+      }
     }
   };
 
-  const handleImageUpload = (files: File[]) => {
-    setImageFiles(files);
+  const handleImageUpload = async (files: File[]) => {
     if (files.length > 0) {
       const file = files[0];
-      const url = URL.createObjectURL(file);
-      updateDesignField("imageUrl", url);
+      setImageUploading(true);
+      setImageFiles(files);
+      
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", "image");
+        
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          updateDesignField("imageUrl", result.url);
+          shopify.toast.show("Image uploaded successfully");
+        } else {
+          shopify.toast.show(result.error || "Failed to upload image", { isError: true });
+          setImageFiles([]);
+        }
+      } catch (error) {
+        shopify.toast.show("Failed to upload image", { isError: true });
+        setImageFiles([]);
+      } finally {
+        setImageUploading(false);
+      }
     }
   };
 
@@ -611,13 +676,12 @@ export default function PopupEditor() {
 
   // Get current section for preview
   const getCurrentSection = () => {
-    if (!formData.isMultiStep || formData.sections.length === 0) {
-      // For single-step popups, always use the first section if available,
-      // otherwise return default content
+    if (!formData.isMultiStep) {
+      // For single-step popups, always use the first section if available
       if (formData.sections.length > 0) {
         return formData.sections[0];
       }
-      // Fallback to default content
+      // Fallback to default content with design settings
       return {
         type: "email_capture",
         content: {
@@ -626,6 +690,10 @@ export default function PopupEditor() {
           emailPlaceholder: "Email address",
           primaryButton: "Claim discount",
           secondaryButton: "No, thanks"
+        },
+        design: {
+          // Use global design settings as fallback
+          ...formData
         }
       };
     }
@@ -1098,6 +1166,14 @@ export default function PopupEditor() {
                       ? formData.sections.find((s: any) => s.id === selectedSectionForDesign)?.design?.logoUrl || formData.logoUrl
                       : formData.logoUrl;
                     
+                    if (logoUploading) {
+                      return (
+                        <div style={{ padding: "40px", textAlign: "center" }}>
+                          <Text as="p" variant="bodyMd">Uploading logo...</Text>
+                        </div>
+                      );
+                    }
+                    
                     return currentDesign ? (
                       <BlockStack gap="200">
                         <Thumbnail
@@ -1193,6 +1269,14 @@ export default function PopupEditor() {
                   
                   {(() => {
                     const currentImageUrl = getDesignFieldValue("imageUrl");
+                    
+                    if (imageUploading) {
+                      return (
+                        <div style={{ padding: "40px", textAlign: "center" }}>
+                          <Text as="p" variant="bodyMd">Uploading image...</Text>
+                        </div>
+                      );
+                    }
                     
                     return currentImageUrl ? (
                       <BlockStack gap="200">
