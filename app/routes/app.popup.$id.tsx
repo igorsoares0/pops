@@ -215,6 +215,29 @@ export default function PopupEditor() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [logoUploading, setLogoUploading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  
+  // Helper function to convert legacy buttons to customButtons format
+  const convertLegacyButtons = () => {
+    const buttons = [];
+    
+    // Convert existing customButtons if they exist
+    if (popup.customButtons) {
+      try {
+        const existingButtons = JSON.parse(popup.customButtons);
+        buttons.push(...existingButtons);
+      } catch (e) {
+        console.warn("Failed to parse existing customButtons");
+      }
+    }
+    
+    // If no custom buttons exist, create from legacy fields only (no defaults)
+    if (buttons.length === 0) {
+      // No legacy buttons to convert since we removed primaryButton and secondaryButton from schema
+    }
+    
+    return buttons;
+  };
+  
   const [formData, setFormData] = useState({
     // Multi-step
     isMultiStep: popup.isMultiStep || false,
@@ -232,17 +255,15 @@ export default function PopupEditor() {
         enableEmailCapture: true, // Default first section has email capture
         emailPlaceholder: popup.emailPlaceholder || "Email address",
         
-        // Action buttons
-        primaryButton: popup.primaryButton || "Claim discount",
-        buttonText: popup.primaryButton || "Claim discount",
-        primaryButtonStyle: {
-          backgroundColor: popup.primaryBtnBg || "#000000",
-          textColor: popup.primaryBtnText || "#FFFFFF",
-          style: "filled"
-        },
+        // Unified custom buttons system (with default button if none exist)
+        customButtons: convertLegacyButtons().length > 0 ? convertLegacyButtons() : [{
+          id: "default",
+          text: "New Button", 
+          action: "close_popup",
+          style: "outline"
+        }],
         
         // Additional elements
-        customButtons: [],
         footerText: popup.footerText || "You are signing up to receive communication via email and can unsubscribe at any time.",
         imageUrl: ""
       },
@@ -577,17 +598,13 @@ export default function PopupEditor() {
         enableEmailCapture: false,
         emailPlaceholder: "Email address",
         
-        // Action buttons
-        primaryButton: "Continue",
-        buttonText: "Continue",
-        primaryButtonStyle: {
-          backgroundColor: "#000000",
-          textColor: "#FFFFFF",
-          style: "filled"
-        },
-        
-        // Additional elements
-        customButtons: [],
+        // Unified custom buttons system (always include default button)
+        customButtons: [{
+          id: "default",
+          text: "New Button", 
+          action: "close_popup",
+          style: "outline"
+        }],
         footerText: "",
         imageUrl: ""
       },
@@ -852,8 +869,7 @@ export default function PopupEditor() {
         content: {
           heading: "Get 10% OFF your order",
           description: "Sign up and unlock your instant discount.",
-          emailPlaceholder: "Email address",
-          primaryButton: "Claim discount"
+          emailPlaceholder: "Email address"
         },
         design: {
           // Use global design settings as fallback
@@ -1030,18 +1046,7 @@ export default function PopupEditor() {
                                 />
                               )}
                               
-                              <Text as="h6" variant="headingSm">ACTIONS</Text>
-                              <TextField
-                                label="Button text"
-                                value={section.content.primaryButton || section.content.buttonText || ""}
-                                onChange={(value) => {
-                                  updateSectionContent(section.id, "primaryButton", value);
-                                  updateSectionContent(section.id, "buttonText", value);
-                                }}
-                                placeholder="Continue"
-                              />
-                              
-                              <Text as="h6" variant="headingSm">CUSTOM BUTTONS</Text>
+                              <Text as="h6" variant="headingSm">BUTTONS</Text>
                               {(section.content.customButtons || []).map((button: any) => (
                                 <Card key={button.id}>
                                   <BlockStack gap="300">
@@ -1877,23 +1882,7 @@ export default function PopupEditor() {
                                   />
                                 )}
                                 
-                                <button style={{
-                                  backgroundColor: currentSection.content.primaryButtonStyle?.backgroundColor || currentSectionDesign.primaryBtnBg,
-                                  color: currentSection.content.primaryButtonStyle?.textColor || currentSectionDesign.primaryBtnText,
-                                  border: selectedButtonForDesign === "primary" ? "2px solid #0070f3" : "none",
-                                  padding: "10px 20px",
-                                  borderRadius: "6px",
-                                  width: "100%",
-                                  fontSize: "14px",
-                                  fontWeight: "500",
-                                  cursor: "pointer",
-                                  marginBottom: "10px",
-                                  boxShadow: selectedButtonForDesign === "primary" ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
-                                }}>
-                                  {currentSection.content.primaryButton || currentSection.content.buttonText || "Claim discount"}
-                                </button>
-                                
-                                {/* Custom Buttons */}
+                                {/* All Buttons (Custom Buttons) */}
                                 {(currentSection.content.customButtons || []).map((button: any) => {
                                   const isSelected = selectedButtonForDesign === `custom-${button.id}`;
                                   const localColors = buttonColors[`custom-${button.id}`];
@@ -2082,23 +2071,7 @@ export default function PopupEditor() {
                         />
                       )}
                       
-                      <button style={{
-                        backgroundColor: currentSection.content.primaryButtonStyle?.backgroundColor || currentSectionDesign.primaryBtnBg,
-                        color: currentSection.content.primaryButtonStyle?.textColor || currentSectionDesign.primaryBtnText,
-                        border: selectedButtonForDesign === "primary" ? "2px solid #0070f3" : "none",
-                        padding: "12px 24px",
-                        borderRadius: "6px",
-                        width: "100%",
-                        fontSize: "16px",
-                        fontWeight: "500",
-                        cursor: "pointer",
-                        marginBottom: "12px",
-                        boxShadow: selectedButtonForDesign === "primary" ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
-                      }}>
-                        {currentSection.content.primaryButton || currentSection.content.buttonText || "Claim discount"}
-                      </button>
-                      
-                      {/* Custom Buttons */}
+                      {/* All Buttons (Custom Buttons) */}
                       {(currentSection.content.customButtons || []).map((button: any) => {
                         const isSelected = selectedButtonForDesign === `custom-${button.id}`;
                         const localColors = buttonColors[`custom-${button.id}`];

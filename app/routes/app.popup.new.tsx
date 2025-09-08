@@ -32,6 +32,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
+    // Create default custom buttons for new popup
+    const defaultButtons = [
+      {
+        id: "default",
+        text: "Join Now",
+        action: "close_popup",
+        style: "outline"
+      }
+    ];
+
     const popup = await db.popup.create({
       data: {
         shop: session.shop,
@@ -39,8 +49,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         heading: "Get 10% OFF your order",
         description: "Sign up and unlock your instant discount.",
         emailPlaceholder: "Email address",
-        primaryButton: "Claim discount",
-        secondaryButton: "No, thanks",
+        customButtons: JSON.stringify(defaultButtons),
         footerText: "You are signing up to receive communication via email and can unsubscribe at any time.",
         discountType: "percentage",
         discountValue: 10,

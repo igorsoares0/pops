@@ -10,9 +10,6 @@ interface Section {
     description: string;
     enableEmailCapture?: boolean;
     emailPlaceholder?: string;
-    primaryButton?: string;
-    secondaryButton?: string;
-    buttonText?: string;
     customButtons?: any[];
     footerText?: string;
     imageUrl?: string;
@@ -135,18 +132,6 @@ export function MultiStepPopup({
     }
   };
 
-  const handleSecondaryAction = () => {
-    if (currentSection.type === "email_capture") {
-      onButtonClick("skip_email", currentSection.id);
-      if (!isLastStep) {
-        nextStep();
-      } else {
-        onClose();
-      }
-    } else {
-      onButtonClick("secondary", currentSection.id);
-    }
-  };
 
   return (
     <div style={{
@@ -331,8 +316,9 @@ export function MultiStepPopup({
             position: "relative",
             zIndex: popupData.imagePosition === "background" ? 5 : "auto"
           }}>
-            {currentSection.content.enableEmailCapture ? (
-              <form onSubmit={handleEmailSubmit}>
+            {/* Email input if enabled */}
+            {currentSection.content.enableEmailCapture && (
+              <form onSubmit={handleEmailSubmit} style={{ marginBottom: "12px" }}>
                 <input
                   type="email"
                   value={email}
@@ -350,110 +336,69 @@ export function MultiStepPopup({
                     boxSizing: "border-box"
                   }}
                 />
-                
-                <button 
-                  type="submit"
-                  disabled={isSubmitting}
-                  style={{
-                    backgroundColor: popupData.primaryBtnBg,
-                    color: popupData.primaryBtnText,
-                    border: "none",
-                    padding: "12px 24px",
-                    borderRadius: "6px",
-                    width: "100%",
-                    fontSize: "16px",
-                    fontWeight: "500",
-                    cursor: isSubmitting ? "not-allowed" : "pointer",
-                    marginBottom: "12px",
-                    opacity: isSubmitting ? 0.6 : 1
-                  }}
-                >
-                  {isSubmitting 
-                    ? "Submitting..." 
-                    : (currentSection.content.primaryButton || "Claim discount")
-                  }
-                </button>
-
-                {currentSection.content.secondaryButton && (
-                  <button 
-                    type="button"
-                    onClick={handleSecondaryAction}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: popupData.imagePosition === "background" ? "#fff" : popupData.secondaryBtnText,
-                      fontSize: "14px",
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                      width: "100%"
-                    }}
-                  >
-                    {currentSection.content.secondaryButton}
-                  </button>
-                )}
               </form>
-            ) : (
-              <div>
-                <button 
-                  onClick={handlePrimaryAction}
-                  style={{
-                    backgroundColor: popupData.primaryBtnBg,
-                    color: popupData.primaryBtnText,
-                    border: "none",
-                    padding: "12px 24px",
-                    borderRadius: "6px",
-                    width: "100%",
-                    fontSize: "16px",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    marginBottom: "12px"
-                  }}
-                >
-                  {currentSection.content.buttonText || currentSection.content.primaryButton || (isLastStep ? "Complete" : "Continue")}
-                </button>
-
-                {!isFirstStep && (
-                  <button 
-                    onClick={prevStep}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: popupData.imagePosition === "background" ? "#fff" : popupData.secondaryBtnText,
-                      fontSize: "14px",
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                      width: "100%"
-                    }}
-                  >
-                    ← Back
-                  </button>
-                )}
-              </div>
             )}
 
-            {/* Custom Buttons */}
-            {(currentSection.content.customButtons || []).map((button: any) => (
+            {/* Navigation Back Button */}
+            {!isFirstStep && (
               <button 
-                key={button.id}
-                onClick={() => onButtonClick(button.action, currentSection.id, { url: button.url })}
+                onClick={prevStep}
                 style={{
-                  backgroundColor: button.style === "outline" ? "transparent" : popupData.customBtnBg,
-                  color: button.style === "outline" ? popupData.customBtnBg : popupData.customBtnText,
-                  border: button.style === "outline" ? `1px solid ${popupData.customBtnBg}` : "none",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  width: "100%",
+                  background: "none",
+                  border: "none",
+                  color: popupData.imagePosition === "background" ? "#fff" : popupData.secondaryBtnText,
                   fontSize: "14px",
-                  fontWeight: "500",
                   cursor: "pointer",
-                  marginTop: "8px",
-                  textDecoration: button.style === "plain" ? "underline" : "none",
-                  background: button.style === "plain" ? "none" : undefined
+                  textDecoration: "underline",
+                  width: "100%",
+                  marginBottom: "8px"
                 }}
               >
-                {button.text}
+                ← Back
               </button>
-            ))}
+            )}
+
+            {/* All Buttons (Unified Custom Button System) */}
+            {(currentSection.content.customButtons || []).map((button: any) => {
+              const isSubmitButton = button.action === 'submit' && currentSection.content.enableEmailCapture;
+              const isNavigationButton = button.action === 'navigate' || button.action === 'continue';
+              
+              return (
+                <button 
+                  key={button.id}
+                  type={isSubmitButton ? "submit" : "button"}
+                  disabled={isSubmitButton && isSubmitting}
+                  onClick={() => {
+                    if (isSubmitButton) {
+                      handleEmailSubmit(new Event('submit') as any);
+                    } else if (isNavigationButton) {
+                      handlePrimaryAction();
+                    } else {
+                      onButtonClick(button.action, currentSection.id, { url: button.url });
+                    }
+                  }}
+                  style={{
+                    backgroundColor: button.style === "outline" ? "transparent" : 
+                                   button.style === "primary" ? popupData.primaryBtnBg : popupData.customBtnBg,
+                    color: button.style === "outline" ? (button.style === "primary" ? popupData.primaryBtnBg : popupData.customBtnBg) : 
+                          button.style === "primary" ? popupData.primaryBtnText : popupData.customBtnText,
+                    border: button.style === "outline" ? `1px solid ${button.style === "primary" ? popupData.primaryBtnBg : popupData.customBtnBg}` : "none",
+                    padding: button.style === "primary" ? "12px 24px" : "8px 16px",
+                    borderRadius: "6px",
+                    width: "100%",
+                    fontSize: button.style === "primary" ? "16px" : "14px",
+                    fontWeight: "500",
+                    cursor: (isSubmitButton && isSubmitting) ? "not-allowed" : "pointer",
+                    marginTop: "8px",
+                    textDecoration: button.style === "plain" ? "underline" : "none",
+                    background: button.style === "plain" ? "none" : undefined,
+                    opacity: (isSubmitButton && isSubmitting) ? 0.6 : 1
+                  }}
+                >
+                  {isSubmitButton && isSubmitting ? "Submitting..." : button.text}
+                </button>
+              );
+            })}
           </div>
 
           {/* Footer */}

@@ -55,10 +55,8 @@ model Popup {
   heading           String?
   description       String?
   emailPlaceholder  String?
-  primaryButton     String?
-  secondaryButton   String?
   footerText        String?
-  customButtons     String?   // JSON array of custom buttons
+  customButtons     String?   // JSON array of custom buttons (unified system)
   
   // Global style settings (fallback/default values)
   logoUrl           String?
