@@ -51,6 +51,11 @@ model Popup {
   showStickyBar     Boolean   @default(false)
   sidebarWidget     Boolean   @default(false)
   
+  // Phone field settings
+  enablePhoneField  Boolean   @default(false)
+  phoneRequired     Boolean   @default(false)
+  phonePlaceholder  String?   @default("Phone number")
+  
   // Global content (fallback/default values)
   heading           String?
   description       String?

@@ -53,6 +53,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         footerText: "You are signing up to receive communication via email and can unsubscribe at any time.",
         discountType: "percentage",
         discountValue: 10,
+        enablePhoneField: false,
+        phoneRequired: false,
+        phonePlaceholder: "Phone number",
       },
     });
 

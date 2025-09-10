@@ -100,6 +100,16 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   
   const sidebarWidget = formData.get("sidebarWidget");
   if (sidebarWidget !== null) updateData.sidebarWidget = sidebarWidget === "true";
+  
+  // Phone field settings
+  const enablePhoneField = formData.get("enablePhoneField");
+  if (enablePhoneField !== null) updateData.enablePhoneField = enablePhoneField === "true";
+  
+  const phoneRequired = formData.get("phoneRequired");
+  if (phoneRequired !== null) updateData.phoneRequired = phoneRequired === "true";
+  
+  const phonePlaceholder = formData.get("phonePlaceholder") as string;
+  if (phonePlaceholder !== null) updateData.phonePlaceholder = phonePlaceholder;
 
   // Footer text (now global setting)
   const footerText = formData.get("footerText") as string;
@@ -1046,6 +1056,31 @@ export default function PopupEditor() {
                                 />
                               )}
                               
+                              <Text as="h6" variant="headingSm">PHONE FORM (Optional)</Text>
+                              <Checkbox
+                                label="Enable phone capture"
+                                checked={section.content.enablePhoneCapture || false}
+                                onChange={(checked) => updateSectionContent(section.id, "enablePhoneCapture", checked)}
+                                helpText="Show phone input field in this section"
+                              />
+                              
+                              {section.content.enablePhoneCapture && (
+                                <BlockStack gap="300">
+                                  <TextField
+                                    label="Phone placeholder"
+                                    value={section.content.phonePlaceholder || ""}
+                                    onChange={(value) => updateSectionContent(section.id, "phonePlaceholder", value)}
+                                    placeholder="Phone number"
+                                  />
+                                  <Checkbox
+                                    label="Phone required"
+                                    checked={section.content.phoneRequired || false}
+                                    onChange={(checked) => updateSectionContent(section.id, "phoneRequired", checked)}
+                                    helpText="Make phone field required for form submission"
+                                  />
+                                </BlockStack>
+                              )}
+                              
                               <Text as="h6" variant="headingSm">BUTTONS</Text>
                               {(section.content.customButtons || []).map((button: any) => (
                                 <Card key={button.id}>
@@ -1882,6 +1917,24 @@ export default function PopupEditor() {
                                   />
                                 )}
                                 
+                                {currentSection.content.enablePhoneCapture && (
+                                  <input
+                                    type="tel"
+                                    placeholder={currentSection.content.phonePlaceholder || "Phone number"}
+                                    required={currentSection.content.phoneRequired || false}
+                                    style={{
+                                      width: "100%",
+                                      padding: "10px",
+                                      border: "1px solid #ddd",
+                                      borderRadius: "6px",
+                                      fontSize: "14px",
+                                      marginBottom: "10px",
+                                      color: currentSectionDesign.textInput,
+                                      boxSizing: "border-box"
+                                    }}
+                                  />
+                                )}
+                                
                                 {/* All Buttons (Custom Buttons) */}
                                 {(currentSection.content.customButtons || []).map((button: any) => {
                                   const isSelected = selectedButtonForDesign === `custom-${button.id}`;
@@ -2059,6 +2112,23 @@ export default function PopupEditor() {
                         <input
                           type="email"
                           placeholder={currentSection.content.emailPlaceholder || "Email address"}
+                          style={{
+                            width: "100%",
+                            padding: "12px",
+                            border: "1px solid #ddd",
+                            borderRadius: "6px",
+                            fontSize: "16px",
+                            marginBottom: "12px",
+                            color: currentSectionDesign.textInput
+                          }}
+                        />
+                      )}
+                      
+                      {currentSection.content.enablePhoneCapture && (
+                        <input
+                          type="tel"
+                          placeholder={currentSection.content.phonePlaceholder || "Phone number"}
+                          required={currentSection.content.phoneRequired || false}
                           style={{
                             width: "100%",
                             padding: "12px",
