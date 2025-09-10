@@ -76,30 +76,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const sections = formData.get("sections") as string;
   if (sections !== null) updateData.sections = sections;
   
-  // Rules tab
-  const discountType = formData.get("discountType") as string;
-  if (discountType) updateData.discountType = discountType;
-  
-  const discountValue = formData.get("discountValue") as string;
-  if (discountValue) updateData.discountValue = parseFloat(discountValue);
-  
-  const discountCode = formData.get("discountCode") as string;
-  if (discountCode !== null) updateData.discountCode = discountCode;
-  
-  const autoGenerateCode = formData.get("autoGenerateCode");
-  if (autoGenerateCode !== null) updateData.autoGenerateCode = autoGenerateCode === "true";
-  
-  const hasExpiration = formData.get("hasExpiration");
-  if (hasExpiration !== null) updateData.hasExpiration = hasExpiration === "true";
-  
-  const enterShopifyCode = formData.get("enterShopifyCode");
-  if (enterShopifyCode !== null) updateData.enterShopifyCode = enterShopifyCode === "true";
-  
-  const showStickyBar = formData.get("showStickyBar");
-  if (showStickyBar !== null) updateData.showStickyBar = showStickyBar === "true";
-  
-  const sidebarWidget = formData.get("sidebarWidget");
-  if (sidebarWidget !== null) updateData.sidebarWidget = sidebarWidget === "true";
   
   // Phone field settings
   const enablePhoneField = formData.get("enablePhoneField");
@@ -176,18 +152,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   
   const secondaryBtnText = formData.get("secondaryBtnText") as string;
   if (secondaryBtnText !== null) updateData.secondaryBtnText = secondaryBtnText;
-  
-  const stickyBarBg = formData.get("stickyBarBg") as string;
-  if (stickyBarBg !== null) updateData.stickyBarBg = stickyBarBg;
-  
-  const stickyBarText = formData.get("stickyBarText") as string;
-  if (stickyBarText !== null) updateData.stickyBarText = stickyBarText;
-  
-  const sidebarBg = formData.get("sidebarBg") as string;
-  if (sidebarBg !== null) updateData.sidebarBg = sidebarBg;
-  
-  const sidebarText = formData.get("sidebarText") as string;
-  if (sidebarText !== null) updateData.sidebarText = sidebarText;
 
   const customButtons = formData.get("customButtons") as string;
   if (customButtons !== null) updateData.customButtons = customButtons;
@@ -304,16 +268,6 @@ export default function PopupEditor() {
       }
     }],
     
-    // Rules
-    discountType: popup.discountType || "percentage",
-    discountValue: popup.discountValue || 10,
-    discountCode: popup.discountCode || "",
-    autoGenerateCode: popup.autoGenerateCode,
-    hasExpiration: popup.hasExpiration,
-    enterShopifyCode: popup.enterShopifyCode,
-    showStickyBar: popup.showStickyBar,
-    sidebarWidget: popup.sidebarWidget,
-    
     // Global content
     footerText: popup.footerText || "",
     
@@ -340,10 +294,6 @@ export default function PopupEditor() {
     primaryBtnBg: popup.primaryBtnBg || "#000000",
     primaryBtnText: popup.primaryBtnText || "#FFFFFF",
     secondaryBtnText: popup.secondaryBtnText || "#666666",
-    stickyBarBg: popup.stickyBarBg || "#FFFFFF",
-    stickyBarText: popup.stickyBarText || "#000000",
-    sidebarBg: popup.sidebarBg || "#000000",
-    sidebarText: popup.sidebarText || "#FFFFFF",
     
     // Custom Buttons
     customButtons: popup.customButtons ? JSON.parse(popup.customButtons) : [],
@@ -905,7 +855,6 @@ export default function PopupEditor() {
 
   const tabs = [
     { id: "steps", content: "Steps" },
-    { id: "rules", content: "Rules" },
     { id: "design", content: "Design" },
   ];
 
@@ -1181,121 +1130,8 @@ export default function PopupEditor() {
                 </BlockStack>
               )}
 
-              {/* Rules Tab */}
-              {selectedTab === 1 && (
-                <BlockStack gap="400">
-                  <Text as="h4" variant="headingMd">Discount coupon</Text>
-                  <Text as="p" variant="bodyMd">
-                    Attract customers to subscribe with a discount code.
-                  </Text>
-                  
-                  <Checkbox
-                    label="No discount"
-                    checked={formData.discountType === "none"}
-                    onChange={(checked) => 
-                      updateFormData("discountType", checked ? "none" : "percentage")
-                    }
-                  />
-                  
-                  {formData.discountType !== "none" && (
-                    <BlockStack gap="400">
-                      <Checkbox
-                        label="Discount code"
-                        checked={true}
-                      />
-                      
-                      <Checkbox
-                        label="Auto-generate a unique and non-reusable code for each subscription."
-                        checked={formData.autoGenerateCode}
-                        onChange={(checked) => updateFormData("autoGenerateCode", checked)}
-                      />
-                      
-                      <Select
-                        label="Select type"
-                        options={[
-                          { label: "Percentage off", value: "percentage" },
-                          { label: "Fixed amount off", value: "fixed" },
-                        ]}
-                        value={formData.discountType}
-                        onChange={(value) => updateFormData("discountType", value)}
-                      />
-                      
-                      <TextField
-                        label="Value"
-                        type="number"
-                        value={formData.discountValue.toString()}
-                        onChange={(value) => updateFormData("discountValue", parseFloat(value) || 0)}
-                        suffix={formData.discountType === "percentage" ? "%" : ""}
-                      />
-                      
-                      <Checkbox
-                        label="Set expiration on discount"
-                        checked={formData.hasExpiration}
-                        onChange={(checked) => updateFormData("hasExpiration", checked)}
-                      />
-                      
-                      <Checkbox
-                        label="Enter Shopify discount manually"
-                        checked={formData.enterShopifyCode}
-                        onChange={(checked) => updateFormData("enterShopifyCode", checked)}
-                      />
-                    </BlockStack>
-                  )}
-                  
-                  <Divider />
-                  
-                  <Text as="h4" variant="headingMd">Sticky discount bar</Text>
-                  <Text as="p" variant="bodyMd">
-                    Display a sticky discount bar at the top of your website after a successful subscription.
-                  </Text>
-                  
-                  <Checkbox
-                    label="Show"
-                    checked={formData.showStickyBar}
-                    onChange={(checked) => updateFormData("showStickyBar", checked)}
-                  />
-                  
-                  <Checkbox
-                    label="Don't show"
-                    checked={!formData.showStickyBar}
-                    onChange={(checked) => updateFormData("showStickyBar", !checked)}
-                  />
-                  
-                  <Divider />
-                  
-                  <Text as="h4" variant="headingMd">Sidebar widget</Text>
-                  <Text as="p" variant="bodyMd">
-                    Display a sidebar widget if the customer declines the popup without subscribing.
-                  </Text>
-                  
-                  <Checkbox
-                    label="Show"
-                    checked={formData.sidebarWidget}
-                    onChange={(checked) => updateFormData("sidebarWidget", checked)}
-                  />
-                  
-                  <Checkbox
-                    label="Don't show"
-                    checked={!formData.sidebarWidget}
-                    onChange={(checked) => updateFormData("sidebarWidget", !checked)}
-                  />
-                  
-                  <Divider />
-                  
-                  <InlineStack gap="300">
-                    <Button 
-                      variant="primary" 
-                      onClick={handleSave}
-                      loading={fetcher.state === "submitting"}
-                    >
-                      Save changes
-                    </Button>
-                  </InlineStack>
-                </BlockStack>
-              )}
-
               {/* Design Tab */}
-              {selectedTab === 2 && (
+              {selectedTab === 1 && (
                 <BlockStack gap="400">
                   <Text as="h4" variant="headingMd">Design Settings</Text>
                   <Text as="p" variant="bodyMd">
@@ -1642,29 +1478,6 @@ export default function PopupEditor() {
                     </Banner>
                   )}
                   
-                  <Text as="h5" variant="headingSm">Sticky discount bar</Text>
-                  <ColorPickerField
-                    label="Background"
-                    value={getDesignFieldValue("stickyBarBg")}
-                    onChange={(value) => updateDesignField("stickyBarBg", value)}
-                  />
-                  <ColorPickerField
-                    label="Text"
-                    value={getDesignFieldValue("stickyBarText")}
-                    onChange={(value) => updateDesignField("stickyBarText", value)}
-                  />
-                  
-                  <Text as="h5" variant="headingSm">Sidebar widget</Text>
-                  <ColorPickerField
-                    label="Background"
-                    value={getDesignFieldValue("sidebarBg")}
-                    onChange={(value) => updateDesignField("sidebarBg", value)}
-                  />
-                  <ColorPickerField
-                    label="Text"
-                    value={getDesignFieldValue("sidebarText")}
-                    onChange={(value) => updateDesignField("sidebarText", value)}
-                  />
                   
                   <Divider />
                   

@@ -51,8 +51,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         emailPlaceholder: "Email address",
         customButtons: JSON.stringify(defaultButtons),
         footerText: "You are signing up to receive communication via email and can unsubscribe at any time.",
-        discountType: "percentage",
-        discountValue: 10,
         enablePhoneField: false,
         phoneRequired: false,
         phonePlaceholder: "Phone number",

@@ -41,15 +41,6 @@ model Popup {
   isMultiStep       Boolean   @default(false)
   sections          String?   // JSON array of sections with individual design settings
   
-  // Rules
-  discountType      String?   // "percentage" | "fixed" | "none"
-  discountValue     Float?
-  discountCode      String?
-  autoGenerateCode  Boolean   @default(false)
-  hasExpiration     Boolean   @default(false)
-  enterShopifyCode  Boolean   @default(false)
-  showStickyBar     Boolean   @default(false)
-  sidebarWidget     Boolean   @default(false)
   
   // Phone field settings
   enablePhoneField  Boolean   @default(false)
@@ -88,10 +79,6 @@ model Popup {
   secondaryBtnText  String?   @default("#666666")
   customBtnBg       String?   @default("#E5E5E5")
   customBtnText     String?   @default("#000000")
-  stickyBarBg       String?   @default("#FFFFFF")
-  stickyBarText     String?   @default("#000000")
-  sidebarBg         String?   @default("#000000")
-  sidebarText       String?   @default("#FFFFFF")
   
   // Analytics
   views             Int       @default(0)
