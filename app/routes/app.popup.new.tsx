@@ -36,8 +36,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const defaultButtons = [
       {
         id: "default",
-        text: "Join Now",
-        action: "close_popup",
+        text: "Submit",
+        action: "submit",
         style: "outline"
       }
     ];

@@ -232,8 +232,8 @@ export default function PopupEditor() {
         // Unified custom buttons system (with default button if none exist)
         customButtons: convertLegacyButtons().length > 0 ? convertLegacyButtons() : [{
           id: "default",
-          text: "New Button", 
-          action: "close_popup",
+          text: "Submit", 
+          action: "submit",
           style: "outline"
         }],
         
@@ -461,8 +461,7 @@ export default function PopupEditor() {
     const newButton = {
       id: Date.now(),
       text: "New Button",
-      action: "link",
-      url: "",
+      action: "submit",
       style: "outline"
     };
     updateFormData("customButtons", [...formData.customButtons, newButton]);
@@ -485,8 +484,7 @@ export default function PopupEditor() {
     const newButton = {
       id: Date.now(),
       text: "New Button",
-      action: "link",
-      url: "",
+      action: "submit",
       style: "outline",
       buttonStyle: {
         backgroundColor: formData.customBtnBg || "#E5E5E5",
@@ -562,7 +560,7 @@ export default function PopupEditor() {
         customButtons: [{
           id: "default",
           text: "New Button", 
-          action: "close_popup",
+          action: "submit",
           style: "outline"
         }],
         footerText: "",
@@ -1054,22 +1052,13 @@ export default function PopupEditor() {
                                     <Select
                                       label="Action type"
                                       options={[
-                                        { label: "Link to URL", value: "link" },
-                                        { label: "Close popup", value: "close" },
-                                        { label: "Custom action", value: "custom" },
+                                        { label: "Next section", value: "next_section" },
+                                        { label: "Submit form", value: "submit" },
                                       ]}
                                       value={button.action}
                                       onChange={(value) => updateSectionCustomButton(section.id, button.id, "action", value)}
+                                      helpText={button.action === "next_section" ? "Moves to the next step in multi-step popup" : "Submits the form data (email, phone, etc.)"}
                                     />
-                                    
-                                    {button.action === "link" && (
-                                      <TextField
-                                        label="URL"
-                                        value={button.url}
-                                        onChange={(value) => updateSectionCustomButton(section.id, button.id, "url", value)}
-                                        placeholder="https://example.com"
-                                      />
-                                    )}
                                     
                                     <Select
                                       label="Button style"
@@ -1754,6 +1743,7 @@ export default function PopupEditor() {
                                   const localColors = buttonColors[`custom-${button.id}`];
                                   const buttonStyle = localColors || button.buttonStyle || { backgroundColor: currentSectionDesign.customBtnBg, textColor: currentSectionDesign.customBtnText, style: "outline" };
                                   
+                                  
                                   return (
                                     <button 
                                       key={button.id}
@@ -1770,8 +1760,10 @@ export default function PopupEditor() {
                                         cursor: "pointer",
                                         marginBottom: "10px",
                                         textDecoration: buttonStyle.style === "plain" ? "underline" : "none",
-                                        boxShadow: isSelected ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
+                                        boxShadow: isSelected ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none",
+                                        opacity: button.action === "next_section" && !formData.isMultiStep ? 0.5 : 1
                                       }}
+                                      title={button.action === "next_section" && !formData.isMultiStep ? "Next section only works in multi-step popups" : ""}
                                     >
                                       {button.text}
                                     </button>
@@ -1960,6 +1952,7 @@ export default function PopupEditor() {
                         const localColors = buttonColors[`custom-${button.id}`];
                         const buttonStyle = localColors || button.buttonStyle || { backgroundColor: currentSectionDesign.customBtnBg, textColor: currentSectionDesign.customBtnText, style: "outline" };
                         
+                        
                         return (
                           <button 
                             key={button.id}
@@ -1976,8 +1969,10 @@ export default function PopupEditor() {
                               cursor: "pointer",
                               marginBottom: "12px",
                               textDecoration: buttonStyle.style === "plain" ? "underline" : "none",
-                              boxShadow: isSelected ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none"
+                              boxShadow: isSelected ? "0 0 0 2px rgba(0, 112, 243, 0.2)" : "none",
+                              opacity: button.action === "next_section" && !formData.isMultiStep ? 0.5 : 1
                             }}
+                            title={button.action === "next_section" && !formData.isMultiStep ? "Next section only works in multi-step popups" : ""}
                           >
                             {button.text}
                           </button>
